@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Mapbox GL 3D Extrusion</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.1/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.1/mapbox-gl.css" rel="stylesheet" />
+    <style>
+        body { margin: 0; padding: 0; }
+        .container { display: flex; }
+        .map-container { flex: 2; }
+        .info-panel { flex: 1; background-color: #f2f2f2; padding: 10px; }
+        #map { height: 100%; }
+        .dropdown {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1;
+            padding:10px
+        }
+        .legend {
+            position: absolute;
+            top: 60px;
+            left: 10px;
+            z-index: 1;
+            padding:10px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .slider-container {
+            position: absolute;
+            bottom: 40px;
+            left: 10px;
+            z-index: 1;
+            width: 200px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .slider {
+            width: 100%;
+        }
+        .color {
+            padding:4px
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="height: 100vh;">
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+        <div class="legend">
+            Legend
+            <!-- Add your info panel content here -->
+            <div class="linear-colors">
+                <div class="color" style="background-color: rgba(0,255,0, 0.8);">low</div>
+                <div class="color" style="background-color: rgba(255,0,0, 0.8);">high</div>
+            </div>
+        </div>
+        <div class="info-panel">
+            <!-- Add your info panel content here -->
+        </div>
+        <select id="dropdown" class="dropdown">
+            <option value="2011_事務所建築物">2011_事務所建築物</option>
+            <option value="2011_住商併用建物">2011_住商併用建物</option>
+            <option value="2011_独立住宅">2011_独立住宅</option>
+            <option value="2011_集合住宅">2011_集合住宅</option>
+            <option value="2011_教育文化施設">2011_教育文化施設</option>
+            <option value="2011_厚生医療施設">2011_厚生医療施設</option>
+            <option value="2011_供給処理施設">2011_供給処理施設</option>
+            <option value="2011_専用商業施設">2011_専用商業施設</option>
+            <option value="2011_住商併用建物">2011_住商併用建物</option>
+            <option value="2011_宿泊・遊興施設">2011_宿泊・遊興施設</option>
+            <option value="2011_スポーツ・興行施設">2011_スポーツ・興行施設</option>
+            <option value="2011_専用工場">2011_専用工場</option>
+            <option value="2011_住居併用工場">2011_住居併用工場</option>
+            <option value="2011_倉庫運輸関係施設">2011_倉庫運輸関係施設</option>
+            <option value="2011_農林漁業施設">2011_農林漁業施設</option>
+        </select>
+        
+        <div class="slider-container">Adjust Extrusion Height
+            <input type="range" min="0" max="50" value="10" class="slider" id="extrusion-slider">
+        </div>
+    </div>
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoieW9obWFuIiwiYSI6IkxuRThfNFkifQ.u2xRJMiChx914U7mOZMiZw';
+        
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/dark-v10',
+            center: [139.6917, 35.6895],
+            zoom: 10,
+            pitch: 45, // Set the pitch angle to make it a 3D map
+            bearing: -17.6 // Set the bearing angle for a better perspective
+        });
+        
+        var selectedvar = '2011_事務所建築物'; // Default selected value
+        var extrusionHeight = 10; // Default extrusion height
+
+        document.getElementById('dropdown').addEventListener('change', function() {
+            selectedvar = this.value;
+            updateExtrusionLayer();
+        });
+
+        document.getElementById('extrusion-slider').addEventListener('input', function() {
+            extrusionHeight = parseInt(this.value);
+            updateExtrusionLayer();
+        });
+            
+        map.on('load', function () {
+            map.addSource('my-data', {
+                type: 'geojson',
+                data: 'data/mesh2011.geojson'
+            });
+
+            map.addLayer({
+                id: 'extrusion-layer',
+                type: 'fill-extrusion',
+                source: 'my-data',
+                
+            });
+
+            map.on('mousemove', 'extrusion-layer', function(e) {
+                
+                var properties = e.features[0].properties;
+                var infoPanelContent = '';
+                for (var key in properties) {
+                    infoPanelContent += '<p>' + key + ': ' + properties[key] + '</p>';
+                }
+                document.querySelector('.info-panel').innerHTML = infoPanelContent;
+            });
+
+            updateExtrusionLayer();
+        });
+
+        function updateExtrusionLayer() {
+            map.setPaintProperty('extrusion-layer', 'fill-extrusion-color', [
+                'interpolate',
+                ['linear'],
+                ['get', selectedvar],
+                0, 'rgba(0,255,0, 0.8)',
+                500, 'rgba(255,0,0, 0.8)'
+            ]);
+
+            
+
+            map.setPaintProperty('extrusion-layer', 'fill-extrusion-height', ['*', ['get', selectedvar], extrusionHeight]);
+
+        }
+            </script>
+            </body>
+</html>
+            
+ 
