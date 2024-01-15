@@ -7,7 +7,7 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.1/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.1/mapbox-gl.css" rel="stylesheet" />
     <style>
-        body { margin: 0; padding: 0; }
+        body { margin: 0; padding: 0;font-family: sans-serif; }
         .container { display: flex; }
         .map-container { flex: 2; }
         .info-panel { flex: 1; background-color: #f2f2f2; padding: 10px; }
@@ -16,6 +16,13 @@
             position: absolute;
             top: 10px;
             left: 10px;
+            z-index: 1;
+            padding:10px
+        }
+        .dropdown-topright {
+            position: absolute;
+            top: 10px;
+            right: 10px;
             z-index: 1;
             padding:10px
         }
@@ -53,44 +60,54 @@
             <div id="map"></div>
         </div>
         <div class="legend">
-            Legend
+            
             <!-- Add your info panel content here -->
             <div class="linear-colors">
-                <div class="color" style="background-color: rgba(0,255,0, 0.8);">low</div>
-                <div class="color" style="background-color: rgba(255,0,0, 0.8);">high</div>
+                <div class="color" style="background-color: rgba(0,255,0, 0.8);font-size:0.7em;">Low</div>
+                <div class="color" style="background-color: rgba(255,0,0, 0.8);font-size:0.7em;">High (500+) </div>
             </div>
         </div>
         <div class="info-panel">
             <!-- Add your info panel content here -->
         </div>
         <select id="dropdown" class="dropdown">
-            <option value="2011_事務所建築物">2011_事務所建築物</option>
-            <option value="2011_住商併用建物">2011_住商併用建物</option>
             <option value="2011_独立住宅">2011_独立住宅</option>
             <option value="2011_集合住宅">2011_集合住宅</option>
+            <option value="2011_事務所建築物" selected>2011_事務所建築物</option>
+            <option value="2011_住商併用建物">2011_住商併用建物</option>
+            <option value="2011_専用工場">2011_専用工場</option>
+            <option value="2011_住居併用工場">2011_住居併用工場</option>
             <option value="2011_教育文化施設">2011_教育文化施設</option>
             <option value="2011_厚生医療施設">2011_厚生医療施設</option>
             <option value="2011_供給処理施設">2011_供給処理施設</option>
             <option value="2011_専用商業施設">2011_専用商業施設</option>
-            <option value="2011_住商併用建物">2011_住商併用建物</option>
             <option value="2011_宿泊・遊興施設">2011_宿泊・遊興施設</option>
             <option value="2011_スポーツ・興行施設">2011_スポーツ・興行施設</option>
-            <option value="2011_専用工場">2011_専用工場</option>
-            <option value="2011_住居併用工場">2011_住居併用工場</option>
             <option value="2011_倉庫運輸関係施設">2011_倉庫運輸関係施設</option>
             <option value="2011_農林漁業施設">2011_農林漁業施設</option>
         </select>
-        
+
+
+        <select id="style-selector" class="dropdown-topright">
+            <option value="mapbox://styles/mapbox/dark-v10">Dark</option>
+            <option value="mapbox://styles/mapbox/light-v10">Light</option>
+            <option value="mapbox://styles/mapbox/streets-v11">Streets</option>
+            <option value="mapbox://styles/mapbox/outdoors-v11">Outdoors</option>
+            <option value="mapbox://styles/mapbox/satellite-v9">Satellite</option>
+        </select>
+
+
         <div class="slider-container">Adjust Extrusion Height
             <input type="range" min="0" max="50" value="10" class="slider" id="extrusion-slider">
         </div>
     </div>
+
     <script>
         mapboxgl.accessToken = 'pk.eyJ1IjoieW9obWFuIiwiYSI6IkxuRThfNFkifQ.u2xRJMiChx914U7mOZMiZw';
         
         var map = new mapboxgl.Map({
             container: 'map',
-            style: 'mapbox://styles/mapbox/dark-v10',
+            style: 'mapbox://styles/mapbox/satellite-v9',
             center: [139.6917, 35.6895],
             zoom: 10,
             pitch: 45, // Set the pitch angle to make it a 3D map
@@ -99,6 +116,11 @@
         
         var selectedvar = '2011_事務所建築物'; // Default selected value
         var extrusionHeight = 10; // Default extrusion height
+
+
+        function changeMapStyle(style) {
+            map.setStyle(style);
+        }
 
         document.getElementById('dropdown').addEventListener('change', function() {
             selectedvar = this.value;
@@ -110,48 +132,69 @@
             updateExtrusionLayer();
         });
             
+        var building_layer_id;
+
         map.on('load', function () {
             map.addSource('my-data', {
                 type: 'geojson',
                 data: 'data/mesh2011.geojson'
             });
 
+            building_layer_id = 'building-layer' 
             map.addLayer({
-                id: 'extrusion-layer',
+                id: building_layer_id,
                 type: 'fill-extrusion',
                 source: 'my-data',
                 
             });
+            document.getElementById('style-selector').addEventListener('change', function() {
+                map.setStyle(this.value);
+            });
 
-            map.on('mousemove', 'extrusion-layer', function(e) {
+
+            map.on('mousemove', building_layer_id, function(e) {
                 
                 var properties = e.features[0].properties;
                 var infoPanelContent = '';
-                for (var key in properties) {
-                    infoPanelContent += '<p>' + key + ': ' + properties[key] + '</p>';
-                }
+                var selectedProperties = ['2011_独立住宅','2011_集合住宅','2011_事務所建築物','2011_住商併用建物','2011_専用工場','2011_住居併用工場','2011_教育文化施設','2011_厚生医療施設','2011_供給処理施設','2011_専用商業施設','2011_宿泊・遊興施設','2011_スポーツ・興行施設','2011_倉庫運輸関係施設','2011_農林漁業施設']; 
+
+                selectedProperties.forEach(function(key) {
+                    infoPanelContent += '<p>' + key + ': ' + properties[key] + '<br>'+makeBox(Math.floor(properties[key]/50))+'</p>';
+                });
                 document.querySelector('.info-panel').innerHTML = infoPanelContent;
             });
 
             updateExtrusionLayer();
+            
+                    function updateExtrusionLayer() {
+                        map.setPaintProperty(building_layer_id, 'fill-extrusion-color', [
+                            'interpolate',
+                            ['linear'],
+                            ['get', selectedvar],
+                            0, 'rgba(0,255,0, 0.7)',
+                            500, 'rgba(255,0,0, 0.7)'
+                        ]);
+            
+                        map.setPaintProperty(building_layer_id, 'fill-extrusion-height', ['*', ['get', selectedvar], extrusionHeight]);
+                        map.setPaintProperty(building_layer_id, 'fill-extrusion-opacity', 0.8);
+            
+                    }
         });
 
-        function updateExtrusionLayer() {
-            map.setPaintProperty('extrusion-layer', 'fill-extrusion-color', [
-                'interpolate',
-                ['linear'],
-                ['get', selectedvar],
-                0, 'rgba(0,255,0, 0.8)',
-                500, 'rgba(255,0,0, 0.8)'
-            ]);
+        function makeBox(num) {
+            var box = '';
 
-            
-
-            map.setPaintProperty('extrusion-layer', 'fill-extrusion-height', ['*', ['get', selectedvar], extrusionHeight]);
-
+            if (num === 0) {
+                box += '<span style="background-color:gray;border:1px solid white;width:25px;height:25px;font-size:0.6em;color:white;display:inline-block;line-height:25px;text-align:center;"></span>';
+            } else {
+                for (var i = 0; i < num; i++) {
+                    box += '<span style="background-color:red;border:1px solid white;width:25px;height:25px;font-size:0.6em;color:white;display:inline-block;line-height:25px;text-align:center;">50</span>';
+                }
+            }
+            return box;
         }
-            </script>
-            </body>
+</script>
+</body>
 </html>
             
  

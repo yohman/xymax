@@ -1,6 +1,10 @@
 # XYMAX+Yoh
 A collection of various data visualizations related to Japan's real estate situation
 
+## 1/15/2024
+
+
+
 ## 9/16/2023
 
 - Left (yellow): 2001 buildings
