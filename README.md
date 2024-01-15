@@ -3,7 +3,11 @@ A collection of various data visualizations related to Japan's real estate situa
 
 ## 1/15/2024
 
+Where are different building uses located in Tokyo?
 
+![Alt text](images/buildinguse.jpg)
+
+https://yohman.github.io/xymax/buildinguse/
 
 ## 9/16/2023
 

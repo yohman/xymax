@@ -166,20 +166,20 @@
 
             updateExtrusionLayer();
             
-                    function updateExtrusionLayer() {
-                        map.setPaintProperty(building_layer_id, 'fill-extrusion-color', [
-                            'interpolate',
-                            ['linear'],
-                            ['get', selectedvar],
-                            0, 'rgba(0,255,0, 0.7)',
-                            500, 'rgba(255,0,0, 0.7)'
-                        ]);
-            
-                        map.setPaintProperty(building_layer_id, 'fill-extrusion-height', ['*', ['get', selectedvar], extrusionHeight]);
-                        map.setPaintProperty(building_layer_id, 'fill-extrusion-opacity', 0.8);
-            
-                    }
         });
+        function updateExtrusionLayer() {
+            map.setPaintProperty(building_layer_id, 'fill-extrusion-color', [
+                'interpolate',
+                ['linear'],
+                ['get', selectedvar],
+                0, 'rgba(0,255,0, 0.7)',
+                500, 'rgba(255,0,0, 0.7)'
+            ]);
+
+            map.setPaintProperty(building_layer_id, 'fill-extrusion-height', ['*', ['get', selectedvar], extrusionHeight]);
+            map.setPaintProperty(building_layer_id, 'fill-extrusion-opacity', 0.8);
+
+        }
 
         function makeBox(num) {
             var box = '';
