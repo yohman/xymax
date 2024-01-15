@@ -7,7 +7,7 @@ Where are different building uses located in Tokyo?
 
 ![Alt text](images/buildinguse.jpg)
 
-https://yohman.github.io/xymax/buildinguse/
+[https://yohman.github.io/xymax/buildinguse/](https://yohman.github.io/xymax/buildinguse/)
 
 ## 9/16/2023
 
