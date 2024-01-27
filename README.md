@@ -1,4 +1,23 @@
 # XYMAX+Yoh
+
+## Resources
+
+Data
+
+Plateau "real-time" data:
+
+- https://www.geospatial.jp/ckan/dataset/plateau
+
+
+Conversion tools gml → geojson
+
+- https://github.com/GeoPythonJP/citygml-convert-tools
+- https://ozekik.github.io/plateaukit/cli/convert/
+
+
+
+# Log
+
 A collection of various data visualizations related to Japan's real estate situation
 
 ## 1/15/2024
