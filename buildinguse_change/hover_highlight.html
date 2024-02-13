@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Highlight features containing similar data</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.js"></script>
+<style>
+body { margin: 0; padding: 0; }
+#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+</style>
+</head>
+<body>
+<style>
+	.map-overlay {
+		font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+		background-color: #fff;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+		border-radius: 3px;
+		position: absolute;
+		width: 25%;
+		min-width: 200px;
+		top: 40px;
+		left: 10px;
+		padding: 10px;
+		display: none;
+	}
+</style>
+
+<div id="map"></div>
+<div id="map-overlay" class="map-overlay"></div>
+
+<select id="filter-dropdown" style="position: absolute;top: 10px; left: 10px; font-size: x-large;">
+  <option value="2011_building_count">2011_building_count</option>
+  <option value="2011_独立住宅">2011_独立住宅</option>
+  <option value="2011_集合住宅">2011_集合住宅</option>
+  <option value="2011_事務所建築物">2011_事務所建築物</option>
+  <option value="2011_住商併用建物">2011_住商併用建物</option>
+  <option value="2011_専用工場">2011_専用工場</option>
+</select>
+
+
+
+<script>
+	mapboxgl.accessToken = 'pk.eyJ1IjoieW9obWFuIiwiYSI6IkxuRThfNFkifQ.u2xRJMiChx914U7mOZMiZw';
+	const map = new mapboxgl.Map({
+		container: 'map',
+		// // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+		// style: 'mapbox://styles/mapbox/streets-v12',
+		// center: [-98, 38.88],
+		center: [139.6917, 35.6895],
+
+		minZoom: 8,
+		zoom: 11
+	});
+
+	let filter_var = '2011_building_count';
+
+	// Get the value from the select dropdown
+	const selectDropdown = document.getElementById('filter-dropdown');
+	selectDropdown.addEventListener('change', (event) => {
+		filter_var = event.target.value;
+	});
+	
+	const overlay = document.getElementById('map-overlay');
+
+	// Create a popup, but don't add it to the map yet.
+	const popup = new mapboxgl.Popup({
+		closeButton: false
+	});
+
+	// Because features come from tiled vector data,
+	// feature geometries may be split
+	// or duplicated across tile boundaries.
+	// As a result, features may appear
+	// multiple times in query results.
+	function getUniqueFeatures(features, comparatorProperty) {
+		const uniqueIds = new Set();
+		const uniqueFeatures = [];
+		for (const feature of features) {
+			const id = feature.properties[comparatorProperty];
+			if (!uniqueIds.has(id)) {
+				uniqueIds.add(id);
+				uniqueFeatures.push(feature);
+			}
+		}
+		return uniqueFeatures;
+	}
+
+	map.on('load', () => {
+
+	  	map.addSource('meshes', {
+			'type': 'vector',
+			'url': 'mapbox://yohman.522z57ij'
+
+		});
+
+		// Add transparent mesh polygons
+		// for default display.
+		map.addLayer(
+			{
+				'id': 'meshes',
+				'type': 'fill',
+				'source': 'meshes',
+				'source-layer': 'mesh2011-78odlm',
+				'paint': {
+					'fill-outline-color': 'rgba(0,0,0,0.1)',
+					'fill-color': 'rgba(0,0,0,0.15)',
+				}
+			},
+		);
+		// line
+		map.addLayer(
+			{
+				'id': 'mesh-line',
+				'type': 'line',
+				'source': 'meshes',
+				'source-layer': 'mesh2011-78odlm',
+				'paint': {
+					'line-color': 'rgba(0,0,0,1)',
+					'line-width': 4,
+				},
+				'filter': ['in', filter_var, '']
+			},
+		);
+
+		// Add filled mesh polygons
+		// for highlighted display.
+		map.addLayer(
+			{
+				'id': 'meshes-highlighted',
+				'type': 'fill',
+				'source': 'meshes',
+				'source-layer': 'mesh2011-78odlm',
+				'paint': {
+					'fill-outline-color': '#484896',
+					'fill-color': '#6e599f',
+					'fill-opacity': 0.75,
+				},
+				// Display none by adding a
+				// filter with an empty string.
+				'filter': ['in', filter_var, '']
+			},
+			// Place polygons under labels, roads and buildings.
+			// 'building'
+		);
+
+		map.addLayer(
+			{
+				'id': 'mesh-highlighted',
+				'type': 'fill',
+				'source': 'meshes',
+				'source-layer': 'mesh2011-78odlm',
+				'paint': {
+					'fill-outline-color': '#484896',
+					'fill-color': 'yellow',
+					'fill-opacity': 0.75,
+				},
+				// Display none by adding a
+				// filter with an empty string.
+				'filter': ['in', filter_var, '']
+			},
+			// Place polygons under labels, roads and buildings.
+			// 'building'
+		);
+
+		map.on('mousemove', 'meshes', (e) => {
+			// Change the cursor style as a UI indicator.
+			map.getCanvas().style.cursor = 'pointer';
+			
+			// Use the first found feature.
+			const feature = e.features[0];
+
+			// Query the counties layer visible in the map.
+			// Only onscreen features are returned.
+			// Use filter to collect only results
+			// with the same mesh name.
+			
+			const relatedCounties = map.querySourceFeatures('meshes', {
+				sourceLayer: 'mesh2011-78odlm',
+				filter: ['all',['<', ['get', filter_var], feature.properties[filter_var]]]
+			});
+
+			console.log(relatedCounties)
+			// Remove duplicates by checking for matching KEY_CODE mesh ID.
+			const uniqueCounties = getUniqueFeatures(relatedCounties, 'KEY_CODE');
+
+			const population = document.createElement('div');
+
+			overlay.innerHTML = 'Total '+filter_var+' count: <h1>' + feature.properties[filter_var].toLocaleString() + '</h1>' + 'There are <h1>' + uniqueCounties.length.toLocaleString() + '</h1> meshes with fewer '+filter_var+' than this one.';
+
+			overlay.style.display = 'block';
+
+			// overlay.appendChild(title);
+			overlay.appendChild(population);
+			
+			// Add features with the same mesh name
+			// to the highlighted layer.
+			map.setFilter('meshes-highlighted', ['all',
+				['<',['get', filter_var],feature.properties[filter_var]],
+			]);
+
+			// highlight the selected mesh
+			map.setFilter('mesh-highlighted', ['all',
+				['==',['get', 'KEY_CODE'],feature.properties['KEY_CODE']],
+			]);
+
+			// highlight the selected mesh outline
+			map.setFilter('mesh-line', ['all',
+				['==',['get', 'KEY_CODE'],feature.properties['KEY_CODE']],
+			]);
+
+			// Display a popup with the name of the mesh.
+			popup
+				.setLngLat(e.lngLat)
+				.setText('Building count: '+feature.properties[filter_var].toLocaleString())
+				.addTo(map);
+		});
+
+		map.on('mouseleave', 'meshes', () => {
+			map.getCanvas().style.cursor = '';
+			popup.remove();
+			map.setFilter('meshes-highlighted', ['in', 'mesh', '']);
+			overlay.style.display = 'none';
+		});
+	});
+</script>
+
+</body>
+</html>

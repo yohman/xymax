@@ -1,0 +1,121 @@
+body { margin: 0; padding: 0;font-family: sans-serif; }
+.container { display: flex; }
+.map-container { flex: 2; }
+.info-panel { flex: 1; background-color: #f2f2f2; padding: 10px; overflow: scroll;}
+#map { height: 100%; }
+.title-bar {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1;
+    padding:10px;
+    font-size: 1.2em;
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+}
+.active {
+    background-color: #007bff;
+    color: #fff;
+    font-size:1.2em;
+    padding:5px;
+}
+.inactive {
+    background-color: #f2f2f2;
+    color: #000;
+    font-size:1.2em;
+    padding:5px;
+}
+
+.dropdown {
+    padding:5px;
+    font-size: 1.2em;
+}
+.dropdown-topright {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1;
+    padding:10px
+}
+.legend {
+    /* position: absolute;
+    top: 60px;
+    left: 10px; */
+    z-index: 1;
+    padding:10px;
+    background-color: white;
+    padding: 10px;
+    border-radius: 5px;
+}
+.legend-container {
+    position: absolute;
+    bottom: 40px;
+    left: 10px;
+    z-index: 1;
+    width: 200px;
+    background-color: rgba(255, 255, 255, 0.6);
+    padding: 10px;
+    border-radius: 5px;
+}
+.slider {
+    width: 100%;
+}
+.color {
+    padding:4px
+}
+/* 
+.mapboxgl-popup.popup {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    color: #333;
+  } */
+
+  .mapboxgl-popup-content {
+    background: #fff;
+    opacity: 0.8;
+    border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.1);
+    padding: 10px 10px 15px;
+    pointer-events: auto;
+    position: relative;
+}
+.mapboxgl-popup-tip {
+    opacity: 0.8;
+    border: 10px solid transparent;
+    height: 0;
+    width: 0;
+    z-index: 1;
+}
+
+/* 
+.custom-popup {
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  padding: 5px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #333;
+} */
+
+/* English */
+.custom-popup {
+    /* position: relative; */
+    font-family: Arial, sans-serif;
+    font-size: 9px;
+    padding: 2px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    color: #fff;
+    max-width: 30px;
+    border:1px solid white;
+
+}
+
+
+  

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Highlight features containing similar data</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.js"></script>
+<style>
+body { margin: 0; padding: 0; }
+#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+</style>
+</head>
+<body>
+<style>
+    .map-overlay {
+        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        background-color: #fff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        border-radius: 3px;
+        position: absolute;
+        width: 25%;
+        top: 10px;
+        left: 10px;
+        padding: 10px;
+        display: none;
+    }
+</style>
+
+<div id="map"></div>
+<div id="map-overlay" class="map-overlay"></div>
+
+<script>
+	mapboxgl.accessToken = 'pk.eyJ1IjoieW9obWFuIiwiYSI6IkxuRThfNFkifQ.u2xRJMiChx914U7mOZMiZw';
+    const map = new mapboxgl.Map({
+        container: 'map',
+        // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [139.6917, 35.6895],
+        minZoom: 2,
+        zoom: 11
+    });
+
+    const overlay = document.getElementById('map-overlay');
+
+    // Create a popup, but don't add it to the map yet.
+    const popup = new mapboxgl.Popup({
+        closeButton: false
+    });
+
+    // Because features come from tiled vector data,
+    // feature geometries may be split
+    // or duplicated across tile boundaries.
+    // As a result, features may appear
+    // multiple times in query results.
+    function getUniqueFeatures(features, comparatorProperty) {
+        const uniqueIds = new Set();
+        const uniqueFeatures = [];
+        for (const feature of features) {
+            const id = feature.properties[comparatorProperty];
+            if (!uniqueIds.has(id)) {
+                uniqueIds.add(id);
+                uniqueFeatures.push(feature);
+            }
+        }
+        return uniqueFeatures;
+    }
+
+    map.on('load', () => {
+        // Add a custom vector tileset source. The tileset used in
+        // this example contains a feature for every KEY_CODE in the U.S.
+        // Each KEY_CODE contains four properties. For example:
+        // {
+        //     KEY_CODE: "Uintah KEY_CODE",
+        //     FIPS: 49047,
+        //     median-income: 62363,
+        //     population: 34576
+        // }
+        map.addSource('counties', {
+            'type': 'vector',
+            // 'url': 'mapbox://mapbox.82pkq93d'
+            'url': 'mapbox://yohman.522z57ij'
+        });
+        // Add transparent KEY_CODE polygons
+        // for default display.
+        map.addLayer(
+            {
+                'id': 'counties',
+                'type': 'fill',
+                'source': 'counties',
+                'source-layer': 'mesh2011-78odlm',
+                'paint': {
+                    'fill-outline-color': 'rgba(0,0,0,0.1)',
+                    'fill-color': 'rgba(0,0,0,0.1)'
+                }
+            },
+            // Place polygons under labels, roads and buildings.
+            'building'
+        );
+
+        // Add filled KEY_CODE polygons
+        // for highlighted display.
+        map.addLayer(
+            {
+                'id': 'counties-highlighted',
+                'type': 'fill',
+                'source': 'counties',
+                'source-layer': 'mesh2011-78odlm',
+                'paint': {
+                    'fill-outline-color': '#484896',
+                    'fill-color': '#6e599f',
+                    'fill-opacity': 0.75
+                },
+                // Display none by adding a
+                // filter with an empty string.
+                'filter': ['in', 'KEY_CODE', '']
+            },
+            // Place polygons under labels, roads and buildings.
+            // 'building'
+        );
+
+        map.on('mousemove', 'counties', (e) => {
+            // Change the cursor style as a UI indicator.
+            map.getCanvas().style.cursor = 'pointer';
+
+            // Use the first found feature.
+            const feature = e.features[0];
+
+            // Query the counties layer visible in the map.
+            // Only onscreen features are returned.
+            // Use filter to collect only results
+            // with the same KEY_CODE name.
+            const relatedCounties = map.querySourceFeatures('counties', {
+              // 'source-layer': 'mesh2011-78odlm',
+                // filter: ['>', '2011_building_count', feature.properties['2011_building_count']]
+                filter: ['all', ['<', ['number',['get','2011_building_count']], feature.properties['2011_building_count']]]
+            });
+            console.log(relatedCounties)
+            console.log(feature.properties['2011_building_count'])
+            // Remove duplicates by checking for matching FIPS KEY_CODE ID.
+            const uniqueCounties = getUniqueFeatures(relatedCounties, 'FIPS');
+
+            // Total the populations of all features.
+            const populationSum = uniqueCounties.reduce((memo, feature) => {
+                return memo + feature.properties.population;
+            }, 0);
+
+            // Render found features in an overlay.
+            const title = document.createElement('strong');
+            title.textContent =
+                feature.properties.KEY_CODE +
+                ' (' +
+                uniqueCounties.length +
+                ' found)';
+
+            const population = document.createElement('div');
+            population.textContent =
+                'Total population: ' + populationSum.toLocaleString();
+
+            overlay.innerHTML = '';
+            overlay.style.display = 'block';
+
+            overlay.appendChild(title);
+            overlay.appendChild(population);
+
+            // Add features with the same KEY_CODE name
+            // to the highlighted layer.
+            map.setFilter('counties-highlighted', [
+                'in',
+                'KEY_CODE',
+                feature.properties.KEY_CODE
+            ]);
+
+            // Display a popup with the name of the KEY_CODE.
+            popup
+                .setLngLat(e.lngLat)
+                .setText('building count: '+feature.properties['2011_building_count'])
+                .addTo(map);
+        });
+
+        map.on('mouseleave', 'counties', () => {
+            map.getCanvas().style.cursor = '';
+            popup.remove();
+            map.setFilter('counties-highlighted', ['in', 'KEY_CODE', '']);
+            overlay.style.display = 'none';
+        });
+    });
+</script>
+
+</body>
+</html>
