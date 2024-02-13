@@ -20,6 +20,13 @@ Conversion tools gml → geojson
 
 A collection of various data visualizations related to Japan's real estate situation
 
+## 2/13/2024
+What has changed from 2011 to 2016?
+
+![alt text](images/building_use_change_screenshot.jpg)
+
+[https://yohman.github.io/xymax/buildinguse_change/](https://yohman.github.io/xymax/buildinguse_change/)
+
 ## 1/15/2024
 
 Where are different building uses located in Tokyo?
