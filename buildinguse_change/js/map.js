@@ -98,7 +98,7 @@ map.on('load', function () {
 		layout: {},
 		paint: {
 			'line-color': '#666',
-			'line-width': 0.2
+			'line-width': 0.1 
 		},
 		slot: 'top'
 
@@ -114,6 +114,7 @@ map.on('load', function () {
 			value_2011 = e.features[0].properties['2011_'+selectedvar];
 			value_2016 = e.features[0].properties['2016_'+selectedvar];
 			value_diff = value_2016 - value_2011;
+			value_place = e.features[0].properties['KEY_CODE_left'];
 
 			if (value_2011 > value_2016) {
 				popup_html = '<div style="text-align:center"><b style="color:'+colors[0]+';font-size:2rem">⬇︎' + value_diff + '</b><table width=100%><tr><td>2011</td><td>→</td><td><b>'  + value_2011 + '</td></tr><tr><td>2016</td><td>→</td><td><b>' + value_2016 + '</td></tr></table>'+selectedvar+'</div>';
@@ -175,7 +176,7 @@ function changeMapStyle(style) {
 function labelMinMax() {
 
 	// Add a popup to the polygon that has the highest value of the selected variable
-	const features = map.queryRenderedFeatures({ layers: ['mesh-borders'] });
+	const features = map.queryRenderedFeatures({ layers: [building_layer_id] });
 
 	// find highest value
 	let maxVal = -Infinity;
@@ -237,26 +238,6 @@ function labelMinMax() {
 	  .addTo(map);
 
 	  
-
-	// var minPopup = document.createElement('div');
-	// minPopup.className = 'custom-popup';
-	// minPopup.style.backgroundColor = colors[0];
-	// minPopup.innerHTML = '<div style="text-align:center;">⬇︎' + minVal + '</div>';
-
-	// console.log(minFeature.geometry);
-	// // calculate the center of maxFeature
-	// var mincenter = turf.center(minFeature);
-
-	// // Position the custom popup on the map
-	// var minpopupCoordinates = mincenter.geometry.coordinates; 
-	
-	// // Add the custom popup to the map
-	// var popupElement = new mapboxgl.Marker(minPopup)
-	//   .setLngLat(minpopupCoordinates)
-	//   .addTo(map);
-
-
-	  
 }
 
 
@@ -285,43 +266,6 @@ function updateExtrusionLayer_diff() {
 // function to access info-panel and add a chart
 // ------------------------------------------------
 
-function makeChart2() {
-	// English
-// Sample data
-
-
-
-var data = [{
-	x: [-2, 2, 3, 4],
-	y: ['A', 'B', 'C', 'D'],
-	type: 'bar',
-	marker: {
-	  color: [-2,-1,0,], // Values for color scale
-	//   colorscale: 'RdBu', // Diverging color scale
-	  colorscale: [[0, colors[0]], [0.5, colors[2]], [1, colors[4]]], // Custom colorscale
-	  cmin: -2, // Minimum value for color scale
-	  cmax: 2, // Maximum value for color scale
-	  colorbar: {
-		title: 'Color Scale' // Title for color bar
-	  }
-	},
-	orientation: 'h'
-  }];
-  
-  // Layout options
-  var layout = {
-	title: 'Horizontal Bar Chart with Diverging Color Scale',
-	xaxis: { title: 'Value' },
-	yaxis: { title: 'Category' }
-  };
-  
-  // Plot the chart
-  Plotly.newPlot('info-panel', data, layout);
-}
-
-// ------------------------------------------------
-// function to access info-panel and add a chart
-// ------------------------------------------------
 
 function makeChart() {
 	// clear the arrays
@@ -335,7 +279,8 @@ function makeChart() {
 	chart.innerHTML = ''
 
 	// get the features from the map
-	const features = map.queryRenderedFeatures({ layers: ['mesh-borders'] });
+	const features = map.queryRenderedFeatures({ layers: [building_layer_id] });
+	// const features = map.queryRenderedFeatures({ layers: ['mesh-borders'] });
 
 	// sort the elements by greatest to smallest
 	features.sort((a, b) => b.properties[selectedvar+'_diff'] - a.properties[selectedvar+'_diff']);
@@ -375,7 +320,6 @@ function makeChart() {
 		keyArray=bottom_keyArray.reverse()
 	}
 
-	
 
 	// make a copy of lineArray
 	var lineArrayColors = lineArray.slice();
@@ -446,8 +390,8 @@ function highlightFeature(pos) {
 
 	// filter by key_code and paint the feature with a different color
 	map.setFilter('mesh-borders', ['==', 'KEY_CODE_left', keyArray[pos]]);
-	map.setPaintProperty('mesh-borders', 'line-color', 'red');
-	map.setPaintProperty('mesh-borders', 'line-width', 4);
+	map.setPaintProperty('mesh-borders', 'line-color', 'black');
+	map.setPaintProperty('mesh-borders', 'line-width', 2);
 
 	
 }

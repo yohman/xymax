@@ -1,7 +1,13 @@
 body { margin: 0; padding: 0;font-family: sans-serif; }
 .container { display: flex; }
 .map-container { flex: 2; }
-.info-panel { flex: 1; background-color: #f2f2f2; padding: 10px; overflow: scroll;}
+
+.info-panel { 
+    flex: 1; 
+    background-color: #fff; 
+    padding: 0px; 
+}
+
 .info-panel-chart { 
     flex: 1; 
     background-color: #f2f2f2; 
