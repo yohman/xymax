@@ -27,13 +27,15 @@
         </div>
         <div id="info-panel" class="info-panel">
             <!-- Add your info panel content here -->
+            <div id="info-panel-options"></div>
+            <div id="info-panel-chart"></div>
         </div>
 
         <!-- create a floating div in the top left of the page and put the div below in it -->
         <div class="title-bar">
             <div class="floating-div-content">
-                <h1>Building Use</h1>
-                <p>How Tokyo has changed from 2011 to 2016</p>
+                <h1>Tokyo from 2011 to 2016</h1>
+                <p>How building use has changed over time</p>
             </div>
             <div class="year-selector">
                 <!--             
@@ -60,15 +62,20 @@
         </div>
 
 
-
-
+        <div class="options-topright">
+            <label for="show-top">Show Top</label>
+            <input type="radio" id="show-top" checked name="show-option" value="true">
+            <label for="show-bottom">Show Bottom</label>
+            <input type="radio" id="show-bottom" name="show-option" value="false">
+        </div>        
+<!-- 
         <select id="style-selector" class="dropdown-topright">
             <option value="mapbox://styles/mapbox/dark-v10">Dark</option>
             <option value="mapbox://styles/mapbox/light-v10">Light</option>
             <option value="mapbox://styles/mapbox/streets-v11">Streets</option>
             <option value="mapbox://styles/mapbox/outdoors-v11">Outdoors</option>
             <option value="mapbox://styles/mapbox/satellite-v9">Satellite</option>
-        </select>
+        </select> -->
 
 
         <div class="legend-container">Legend

@@ -2,6 +2,14 @@ body { margin: 0; padding: 0;font-family: sans-serif; }
 .container { display: flex; }
 .map-container { flex: 2; }
 .info-panel { flex: 1; background-color: #f2f2f2; padding: 10px; overflow: scroll;}
+.info-panel-chart { 
+    flex: 1; 
+    background-color: #f2f2f2; 
+    padding: 10px; 
+    overflow: scroll;
+    height: 100%;
+}
+
 #map { height: 100%; }
 .title-bar {
     position: absolute;
@@ -10,8 +18,10 @@ body { margin: 0; padding: 0;font-family: sans-serif; }
     z-index: 1;
     padding:10px;
     font-size: 1.2em;
-    background-color: rgba(0, 0, 0, 0.15);
+    background-color: rgba(255, 255, 255, .8);
     border-radius: 4px;
+    /* add shadow */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 .active {
     background-color: #007bff;
@@ -30,10 +40,10 @@ body { margin: 0; padding: 0;font-family: sans-serif; }
     padding:5px;
     font-size: 1.2em;
 }
-.dropdown-topright {
+.options-topright {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 30px;
+    right: 30px;
     z-index: 1;
     padding:10px
 }
@@ -46,6 +56,7 @@ body { margin: 0; padding: 0;font-family: sans-serif; }
     background-color: white;
     padding: 10px;
     border-radius: 5px;
+    
 }
 .legend-container {
     position: absolute;
@@ -56,6 +67,8 @@ body { margin: 0; padding: 0;font-family: sans-serif; }
     background-color: rgba(255, 255, 255, 0.6);
     padding: 10px;
     border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+
 }
 .slider {
     width: 100%;
