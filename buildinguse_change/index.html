@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Mapbox GL 3D Extrusion</title>
+    <title>東京物語2011年〜2016年</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
     <!-- <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.1/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.1/mapbox-gl.css" rel="stylesheet" /> -->
@@ -34,8 +34,8 @@
         <!-- create a floating div in the top left of the page and put the div below in it -->
         <div class="title-bar">
             <div class="floating-div-content">
-                <h1>Tokyo from 2011 to 2016</h1>
-                <p>How building use has changed over time</p>
+                <h1>東京物語2011年〜2016年</h1>
+                <p>建物の用途は時間の経過とともにどのように変化したか</p>
             </div>
             <div class="year-selector">
                 <!--             
@@ -43,9 +43,9 @@
                 <button id="button-2016" class="year-button active" onclick="changeYear('2016')">2016</button>
                  -->
                 <select id="dropdown" class="dropdown">
+                    <option value="集合住宅" selected>集合住宅</option>
                     <option value="独立住宅">独立住宅</option>
-                    <option value="集合住宅">集合住宅</option>
-                    <option value="事務所建築物" selected>事務所建築物</option>
+                    <option value="事務所建築物">事務所建築物</option>
                     <option value="住商併用建物">住商併用建物</option>
                     <option value="専用工場">専用工場</option>
                     <option value="住居併用工場">住居併用工場</option>
@@ -78,7 +78,8 @@
         </select> -->
 
 
-        <div class="legend-container">Legend
+        <div class="legend-container">
+            Legend
             <div class="legend">
             
                 <!-- Add your info panel content here -->

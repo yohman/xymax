@@ -1,45 +1,46 @@
-mapboxgl.accessToken = 'pk.eyJ1IjoieW9obWFuIiwiYSI6IkxuRThfNFkifQ.u2xRJMiChx914U7mOZMiZw';
-var building_layer_id = 'building-layer' 
-var selectedvar = '事務所建築物'; // Default selected value
-var extrusionHeight = 10; // Default extrusion height
-var mapStyle = 'mapbox://styles/mapbox/satellite-streets-v11'; // Default map style
-var selectedyear = '2016'; // Default selected year
+// ------------------------------------------------
+//
+// globals
+//
+// ------------------------------------------------
 
-var max_bin_val = 20;
+// create a namespace variable for the project xymax
+var xymax = xymax || {}
 
-var minPopup = document.createElement('div');
-var maxPopup = document.createElement('div');
+mapboxgl.accessToken = 'pk.eyJ1IjoieW9obWFuIiwiYSI6IkxuRThfNFkifQ.u2xRJMiChx914U7mOZMiZw'
+var selectedvar 	= '集合住宅' // Default selected value
+var max_bin_val 	= 20
+var minPopup 		= document.createElement('div')
+var maxPopup		= document.createElement('div')
+var colors 			= ['rgba(165,0,38,0.8)', 'rgba(248,139,81,0.8)', 'rgba(253,254,186,0.8)', 'rgba(113,193,100,0.8)', 'rgba(0,104,55,0.8)']
+var lineArray 		= []
+var keyArray 		= []
+var placeArray 		= []
+var n = 50 // number of elements to show in the chart
+var showTop 		= true
+
+const map = new mapboxgl.Map({
+	container: 'map',
+	center: [139.6917, 35.6895],
+	zoom: 10,
+})
 
 var popup = new mapboxgl.Popup({
 	className: 'popup',
 	closeButton: false,
 	closeOnClick: false
-});
+})
 
-var colors = ['rgba(165,0,38,0.8)', 'rgba(248,139,81,0.8)', 'rgba(253,254,186,0.8)', 'rgba(113,193,100,0.8)', 'rgba(0,104,55,0.8)'];
-
-// create a line array
-var lineArray = [];
-// create a key_code array
-var keyArray = [];
-
-const map = new mapboxgl.Map({
-	container: 'map',
-	// style: mapStyle,
-	center: [139.6917, 35.6895],
-	zoom: 10,
-	// pitch: 45, // Set the pitch angle to make it a 3D map
-	// bearing: -17.6 // Set the bearing angle for a better perspective
-});
-
-
+// ------------------------------------------------
+// Add event listeners
+// ------------------------------------------------
 
 document.getElementById('dropdown').addEventListener('change', function() {
-	selectedvar = this.value;
-	updateExtrusionLayer_diff();
-	labelMinMax();
-	makeChart();
-});
+	selectedvar = this.value
+	updateExtrusionLayer_diff()
+	labelMinMax()
+	makeChart()
+})
 
 document.getElementById('extrusion-slider').addEventListener('input', function() {
 	max_bin_val = parseInt(this.value);
@@ -47,8 +48,6 @@ document.getElementById('extrusion-slider').addEventListener('input', function()
 	updateLegend();
 	makeChart();
 });
-
-var showTop = true
 
 // Add event listener to radio buttons
 document.querySelectorAll('input[type="radio"]').forEach(function(radio) {
@@ -61,35 +60,30 @@ document.querySelectorAll('input[type="radio"]').forEach(function(radio) {
     });
   });
 
-// document.getElementById('style-selector').addEventListener('change', function() {
-// 	map.setStyle(this.value);
-	
-// });
-
 
 // ------------------------------------------------
 // Load the map
 // ------------------------------------------------
 
 map.on('load', function () {
-	console.log('loading map...');
+	console.log('loading map...')
 
-	updateLegend();
+	updateLegend()
 
 	map.addSource('my-data', {
 		type: 'geojson',
 		// data: 'data/mesh2011_2016.geojson'
 		data: 'data/mesh2011_2016_master.geojson'
 		// data: 'data/mesh2011.geojson'
-	});
+	})
 	
 	map.addLayer({
-		id: building_layer_id,
+		id: 'mesh',
 		// type: 'fill-extrusion',
 		type: 'fill',
 		source: 'my-data',
 		slot: 'top'
-	});
+	})
 
 	map.addLayer({
 		id: 'mesh-borders',
@@ -102,47 +96,42 @@ map.on('load', function () {
 		},
 		slot: 'top'
 
-	});
+	})
 
-
-
-	map.on('mousemove', building_layer_id, (e) => {
+	map.on('mousemove', 'mesh', (e) => {
 		if (e.features.length > 0) {
 
-			map.getCanvas().style.cursor = 'pointer';
+			map.getCanvas().style.cursor = 'pointer'
 
-			value_2011 = e.features[0].properties['2011_'+selectedvar];
-			value_2016 = e.features[0].properties['2016_'+selectedvar];
-			value_diff = value_2016 - value_2011;
-			value_place = e.features[0].properties['KEY_CODE_left'];
-
+			value_2011 = e.features[0].properties['2011_'+selectedvar]
+			value_2016 = e.features[0].properties['2016_'+selectedvar]
+			value_diff = value_2016 - value_2011
+			value_place = e.features[0].properties['CITYNAME']
+			console.log(e.features[0].properties);
 			if (value_2011 > value_2016) {
-				popup_html = '<div style="text-align:center"><b style="color:'+colors[0]+';font-size:2rem">⬇︎' + value_diff + '</b><table width=100%><tr><td>2011</td><td>→</td><td><b>'  + value_2011 + '</td></tr><tr><td>2016</td><td>→</td><td><b>' + value_2016 + '</td></tr></table>'+selectedvar+'</div>';
+				diff_html = '<p style="color:'+colors[0]+';font-size:2rem">⬇︎' + value_diff + '</p>'
 			} 
 			else if (value_2011 == value_2016) {
-				popup_html = '<div style="text-align:center"><b style="color:gray;font-size:2rem">' + value_diff + '</b><table width=100%><tr><td>2011</td><td>→</td><td><b>'  + value_2011 + '</td></tr><tr><td>2016</td><td>→</td><td><b>' + value_2016 + '</td></tr></table>'+selectedvar+'</div>';
+				diff_html = '<p style="color:gray;font-size:2rem">' + value_diff + '</p>'
 			}
 			else {
-				popup_html = '<div style="text-align:center"><b style="color:'+colors[4]+';font-size:2rem">⬆︎' + value_diff + '</b><table width=100%><tr><td>2011</td><td>→</td><td><b>'  + value_2011 + '</td></tr><tr><td>2016</td><td>→</td><td><b>' + value_2016 + '</td></tr></table>'+selectedvar+'</div>';
+				diff_html = '<p style="color:'+colors[4]+';font-size:2rem">⬆︎' + value_diff + '</p>'
 			}
-			
+			popup_html = '<div style="text-align:center"><span class="popup-title">'+value_place+'</span>'+diff_html+'<table width=100%><tr><td>2011</td><td>→</td><td><b>'  + value_2011 + '</td></tr><tr><td>2016</td><td>→</td><td><b>' + value_2016 + '</td></tr></table>'+selectedvar+'</div>'
 
 			popup.setLngLat(e.lngLat)
 				.setHTML(popup_html)
 				.addTo(map);
-
-			
 
 		}
 	});
 		
 	// When the mouse leaves the state-fill layer, update the feature state of the
 	// previously hovered feature.
-	map.on('mouseleave', 'building_layer_id', () => {
+	map.on('mouseleave', 'mesh', () => {
 		map.getCanvas().style.cursor = '';
 		popup.remove();
-	});
-
+	})
 
 	updateExtrusionLayer_diff();
 	// execute this function 1 second after the map is loaded
@@ -153,9 +142,15 @@ map.on('load', function () {
 
 });
 
+// ------------------------------------------------
+//
+// Functions
+//
+// ------------------------------------------------
+
 function updateExtrusionLayer() {
 	console.log(selectedyear+'_'+selectedvar);
-	map.setPaintProperty(building_layer_id, 'fill-extrusion-color', [
+	map.setPaintProperty('mesh', 'fill-extrusion-color', [
 		'interpolate',
 		['linear'],
 		['get', selectedyear+'_'+selectedvar],
@@ -163,8 +158,8 @@ function updateExtrusionLayer() {
 		500, 'rgba(255,0,0, 0.7)'
 	]);
 
-	map.setPaintProperty(building_layer_id, 'fill-extrusion-height', ['*', ['get', selectedyear+'_'+selectedvar], extrusionHeight]);
-	map.setPaintProperty(building_layer_id, 'fill-extrusion-opacity', 0.8);
+	map.setPaintProperty('mesh', 'fill-extrusion-height', ['*', ['get', selectedyear+'_'+selectedvar], extrusionHeight]);
+	map.setPaintProperty('mesh', 'fill-extrusion-opacity', 0.8);
 
 
 }
@@ -176,7 +171,7 @@ function changeMapStyle(style) {
 function labelMinMax() {
 
 	// Add a popup to the polygon that has the highest value of the selected variable
-	const features = map.queryRenderedFeatures({ layers: [building_layer_id] });
+	const features = map.queryRenderedFeatures({ layers: ['mesh'] });
 
 	// find highest value
 	let maxVal = -Infinity;
@@ -244,8 +239,8 @@ function labelMinMax() {
 function updateExtrusionLayer_diff() {
 
 	console.log('updateExtrusionLayer_diff');
-	console.log(building_layer_id);
-	map.setPaintProperty(building_layer_id, 'fill-color', [
+	console.log('mesh');
+	map.setPaintProperty('mesh', 'fill-color', [
 		'interpolate',
 		['linear'],
 		// ['get', selectedyear+'_'+selectedvar],
@@ -266,11 +261,11 @@ function updateExtrusionLayer_diff() {
 // function to access info-panel and add a chart
 // ------------------------------------------------
 
-
 function makeChart() {
 	// clear the arrays
 	lineArray = [];
 	keyArray = [];
+	placeArray = [];
 	// showTop = True;
 	
 
@@ -279,7 +274,7 @@ function makeChart() {
 	chart.innerHTML = ''
 
 	// get the features from the map
-	const features = map.queryRenderedFeatures({ layers: [building_layer_id] });
+	const features = map.queryRenderedFeatures({ layers: ['mesh'] });
 	// const features = map.queryRenderedFeatures({ layers: ['mesh-borders'] });
 
 	// sort the elements by greatest to smallest
@@ -290,17 +285,21 @@ function makeChart() {
 		// add values to arrays
 		const lineLength = element.properties[selectedvar+'_diff'];
 		const key_code = element.properties['KEY_CODE_left'];
+		const place = element.properties['CITYNAME'];
 		lineArray.push(lineLength);
 		keyArray.push(key_code);
+		placeArray.push(place);
 	});
 
 	// find the value of the nth element, and slice the array to only include all numeric values that are larger than the 10th element
 	// slice the lineArray to the top 200 elements
-	var n = 100;
+
 	top_lineArray = lineArray.slice(0, n);
 	top_keyArray = keyArray.slice(0, n);
+	top_placeArray = placeArray.slice(0, n);	
 	bottom_lineArray = lineArray.slice(-n);
 	bottom_keyArray = keyArray.slice(-n);
+	bottom_placeArray = placeArray.slice(-n);
 
 	
 	// var tenth = lineArray[200];
@@ -309,15 +308,16 @@ function makeChart() {
 	// reverse the array so that the largest value is at the top
 	if (showTop) {
 		console.log('showTop')
-		lineArray=top_lineArray.reverse();
+		lineArray=top_lineArray.reverse()
 		keyArray=top_keyArray.reverse()
-		// lineArray=top_lineArray.reverse();
-		// keyArray=top_keyArray.reverse()
+		placeArray=top_placeArray.reverse()
+		
 	}
 	else {
 		console.log('showBottom')
-		lineArray=bottom_lineArray.reverse();
+		lineArray=bottom_lineArray.reverse()
 		keyArray=bottom_keyArray.reverse()
+		placeArray=bottom_placeArray.reverse()
 	}
 
 
@@ -338,22 +338,21 @@ function makeChart() {
 		type: 'bar',
 		x: lineArray,
 		orientation: 'h',
-		hovertemplate: 'Building change: %{x}',
+		text: placeArray,
+		name: '',
+		textposition: 'none',
+		hovertemplate: '%{text}: %{x}',
 		marker: {
 			color: lineArrayColors, // Values for color scale
 			colorscale: [[0, colors[0]], [0.5, colors[2]], [1, colors[4]]], // Custom colorscale
 			cmin: -max_bin_val, // Minimum value for color scale
 			cmax: max_bin_val, // Maximum value for color scale
 			colorbar: {
-			  title: 'Color Scale' // Title for color bar
-			}
+			  title: '' // Title for color bar
+			},
+			
+
 		  },
-	  
-
-
-
-
-
 	}];
 		
 	// Layout options
@@ -391,9 +390,7 @@ function highlightFeature(pos) {
 	// filter by key_code and paint the feature with a different color
 	map.setFilter('mesh-borders', ['==', 'KEY_CODE_left', keyArray[pos]]);
 	map.setPaintProperty('mesh-borders', 'line-color', 'black');
-	map.setPaintProperty('mesh-borders', 'line-width', 2);
-
-	
+	map.setPaintProperty('mesh-borders', 'line-width', 2);	
 }
 
 function updateLegend(){
@@ -403,12 +400,14 @@ function updateLegend(){
 	document.getElementById('legend2').style.backgroundColor = colors[2];
 	document.getElementById('legend3').style.backgroundColor = colors[4];
 	// set the text of the legend to the max_bin_val
-	document.getElementById('legend1').innerHTML = '⬇︎'+ -max_bin_val + ' (decrease)';
-	document.getElementById('legend2').innerHTML = 0 + ' (no change)';
-	document.getElementById('legend3').innerHTML = '⬆︎'+max_bin_val + ' (increase)';
-
-
+	document.getElementById('legend1').innerHTML = '⬇︎'+ -max_bin_val + ' (減少)'
+	document.getElementById('legend2').innerHTML = 0 + ' (変化なし)'
+	document.getElementById('legend3').innerHTML = '⬆︎'+max_bin_val + ' (増加)'
 }
+
+// ------------------------------------------------
+// depracated
+// ------------------------------------------------
 
 // create a function to change the year
 function changeYear(year) {
@@ -425,7 +424,6 @@ function changeYear(year) {
 	// update the extrusion layer
 	updateExtrusionLayer();
 }
-
 
 function makeBox(num) {
 	var box = '';

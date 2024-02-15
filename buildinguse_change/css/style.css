@@ -1,4 +1,9 @@
-body { margin: 0; padding: 0;font-family: sans-serif; }
+body { 
+    margin: 0;
+    padding: 0;
+    font-size:0.8;
+    font-family: sans-serif;
+ }
 .container { display: flex; }
 .map-container { flex: 2; }
 
@@ -29,6 +34,18 @@ body { margin: 0; padding: 0;font-family: sans-serif; }
     /* add shadow */
     box-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
+h1{
+    font-size: 1.2em;
+    margin: 0;
+    padding: 0;
+}
+
+p {
+    font-size: 0.7rem;
+    margin: 10;
+    padding: 10;
+    color:#555
+}
 .active {
     background-color: #007bff;
     color: #fff;
@@ -44,7 +61,7 @@ body { margin: 0; padding: 0;font-family: sans-serif; }
 
 .dropdown {
     padding:5px;
-    font-size: 1.2em;
+    font-size: 1em;
 }
 .options-topright {
     position: absolute;
@@ -62,9 +79,11 @@ body { margin: 0; padding: 0;font-family: sans-serif; }
     background-color: white;
     padding: 10px;
     border-radius: 5px;
+    font-size: 0.8rem;
     
 }
 .legend-container {
+    font-size: 0.8rem;
     position: absolute;
     bottom: 40px;
     left: 10px;
@@ -136,5 +155,11 @@ body { margin: 0; padding: 0;font-family: sans-serif; }
 
 }
 
+.popup-title {
+    font-size: 12px;
+    font-weight: bold;
+    border-top: 1px solid silver;
+    border-bottom: 1px solid silver;
+}
 
   
