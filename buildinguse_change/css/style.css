@@ -65,10 +65,12 @@ p {
 }
 .options-topright {
     position: absolute;
-    top: 30px;
+    top: 20px;
     right: 30px;
     z-index: 1;
-    padding:10px
+    padding:10px;
+    font-size: 0.7rem;
+    border: 1px solid gainsboro;
 }
 .legend {
     /* position: absolute;
@@ -95,9 +97,29 @@ p {
     box-shadow: 0 2px 4px rgba(0,0,0,0.5);
 
 }
+
 .slider {
-    width: 100%;
+    width: 100px;
 }
+
+label {
+    vertical-align: super;
+}
+
+.toggle-3d-label {
+    position: relative;
+    top: 3px;
+}
+
+.slider-label {
+    font-size: 0.6rem;
+    padding: 2px;
+    border: 1px solid #aaa;
+    color: #555;
+    vertical-align: super;
+    background-color: #f2f2f2;
+}
+
 .color {
     padding:4px
 }
@@ -162,4 +184,17 @@ p {
     border-bottom: 1px solid silver;
 }
 
-  
+.toggle-3d {
+
+    position: absolute;
+    left: 10px;
+    z-index: 1;
+    padding:2px;
+    font-size: 0.8rem;
+    margin-top: 20px;  
+    color:#555;
+    background-color: rgba(255, 255, 255, .8);
+    border: 1px solid #bbb;
+    /* add shadow */
+    /* box-shadow: 0 2px 4px rgba(0,0,0,0.5); */
+}

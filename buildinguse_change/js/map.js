@@ -13,11 +13,13 @@ var max_bin_val 	= 20
 var minPopup 		= document.createElement('div')
 var maxPopup		= document.createElement('div')
 var colors 			= ['rgba(165,0,38,0.8)', 'rgba(248,139,81,0.8)', 'rgba(253,254,186,0.8)', 'rgba(113,193,100,0.8)', 'rgba(0,104,55,0.8)']
-var lineArray 		= []
-var keyArray 		= []
-var placeArray 		= []
-var n = 50 // number of elements to show in the chart
-var showTop 		= true
+var lineArray 		= []		// array to store line lengths
+var keyArray 		= []		// array to store the key_codes
+var placeArray 		= []		// array to store the names of the places
+var num_of_bars 	= 150 		// number of elements to show in the chart
+var showTop 		= true		// show top or bottom elements
+var extrusionHeight = 50; 		// Default extrusion height
+var map_in_3d 		= false;	// Default 3d mode
 
 const map = new mapboxgl.Map({
 	container: 'map',
@@ -42,7 +44,12 @@ document.getElementById('dropdown').addEventListener('change', function() {
 	makeChart()
 })
 
-document.getElementById('extrusion-slider').addEventListener('input', function() {
+document.getElementById('3d-slider').addEventListener('input', function() {
+	extrusionHeight = parseInt(this.value);
+	updateExtrusionLayer_diff();
+});
+
+document.getElementById('legend-slider').addEventListener('input', function() {
 	max_bin_val = parseInt(this.value);
 	updateExtrusionLayer_diff();
 	updateLegend();
@@ -58,8 +65,21 @@ document.querySelectorAll('input[type="radio"]').forEach(function(radio) {
 		// Log the variable value
 		console.log('showTop:', showTop);
     });
-  });
+});
 
+// add event listener to update number of bars
+document.getElementById('num-of-bars').addEventListener('input', function() {
+	num_of_bars = parseInt(this.value);
+	// update num-of-bars-label
+	document.getElementById('num-of-bars-label').innerHTML = num_of_bars;
+	makeChart();
+});
+
+// add event listener to update 3d mode
+document.getElementById('3d-mode').addEventListener('change', function() {
+	map_in_3d = this.checked;
+	updateExtrusionLayer_diff();
+});
 
 // ------------------------------------------------
 // Load the map
@@ -78,9 +98,17 @@ map.on('load', function () {
 	})
 	
 	map.addLayer({
+		id: 'mesh3d',
+		type: 'fill-extrusion',
+		// type: 'fill',
+		source: 'my-data',
+		slot: 'top'
+	})
+
+	map.addLayer({
 		id: 'mesh',
-		// type: 'fill-extrusion',
 		type: 'fill',
+		// type: 'fill',
 		source: 'my-data',
 		slot: 'top'
 	})
@@ -142,118 +170,75 @@ map.on('load', function () {
 
 });
 
+map.on('style.load', () => {
+    map.setConfigProperty('basemap', 'lightPreset', 'day');
+	map.setConfigProperty('basemap', 'showPointOfInterestLabels', false);
+	map.setConfigProperty('basemap', 'showPlaceLabels', true);
+	map.setConfigProperty('basemap', 'showRoadLabels', false);
+	map.setConfigProperty('basemap', 'showTransitLabels', true);
+});
+
 // ------------------------------------------------
 //
 // Functions
 //
 // ------------------------------------------------
 
-function updateExtrusionLayer() {
-	console.log(selectedyear+'_'+selectedvar);
-	map.setPaintProperty('mesh', 'fill-extrusion-color', [
-		'interpolate',
-		['linear'],
-		['get', selectedyear+'_'+selectedvar],
-		0, 'rgba(0,255,0, 0.7)',
-		500, 'rgba(255,0,0, 0.7)'
-	]);
-
-	map.setPaintProperty('mesh', 'fill-extrusion-height', ['*', ['get', selectedyear+'_'+selectedvar], extrusionHeight]);
-	map.setPaintProperty('mesh', 'fill-extrusion-opacity', 0.8);
-
-
-}
-
-function changeMapStyle(style) {
-	map.setStyle(style);
-}
-
-function labelMinMax() {
-
-	// Add a popup to the polygon that has the highest value of the selected variable
-	const features = map.queryRenderedFeatures({ layers: ['mesh'] });
-
-	// find highest value
-	let maxVal = -Infinity;
-	let maxFeature = null;
-	for (const feature of features) {
-		// console.log(feature.properties);
-		const value = feature.properties[selectedvar+'_diff'];
-		if (value > maxVal) {
-			maxVal = value;
-			maxFeature = feature;
-		}
-	}
-
-	// find lowest value
-	let minVal = Infinity;
-	let minFeature = null;
-	for (const feature of features) {
-		const value = feature.properties[selectedvar+'_diff'];
-		if (value < minVal) {
-			minVal = value;
-			minFeature = feature;
-		}
-	}
-
-	// ------------------------------------------------
-	// create a custom popup for MAX
-	// ------------------------------------------------
-	maxPopup.className = 'custom-popup';
-	maxPopup.style.backgroundColor = colors[4];
-	maxPopup.innerHTML = '<div style="text-align:center;">⬆︎' + maxVal + '</div>';
-
-	// calculate the center of maxFeature
-	var maxcenter = turf.center(maxFeature);
-
-	// Position the custom popup on the map
-	var maxpopupCoordinates = maxcenter.geometry.coordinates; 
-	
-	// Add the custom popup to the map
-	var popupElement = new mapboxgl.Marker(maxPopup)
-	  .setLngLat(maxpopupCoordinates)
-	  .addTo(map);
-
-	// ------------------------------------------------
-	// create a custom popup for MIN
-	// ------------------------------------------------
-	minPopup.className = 'custom-popup';
-	minPopup.style.backgroundColor = colors[0];
-	minPopup.innerHTML = '<div style="text-align:center;">⬇︎' + minVal + '</div>';
-
-	// calculate the center of minFeature
-	var mincenter = turf.center(minFeature);
-
-	// Position the custom popup on the map
-	var minpopupCoordinates = mincenter.geometry.coordinates; 
-	
-	// Add the custom popup to the map
-	var popupElement = new mapboxgl.Marker(minPopup)
-	  .setLngLat(minpopupCoordinates)
-	  .addTo(map);
-
-	  
-}
-
-
 function updateExtrusionLayer_diff() {
 
-	console.log('updateExtrusionLayer_diff');
-	console.log('mesh');
-	map.setPaintProperty('mesh', 'fill-color', [
-		'interpolate',
-		['linear'],
-		// ['get', selectedyear+'_'+selectedvar],
-		['get', selectedvar+'_diff'],
+	// 3d mode
+	if (map_in_3d) {
+		console.log('3d mode');
+		map.setPitch(65);
+		// make 3d-slider visible
+		document.getElementById('3d-slider').style.display = 'block';
+
+		// rotate and animate the map
+		map.rotateTo(-20, {duration: 1500});
+		map.setLayoutProperty('mesh', 'visibility', 'none')
+		map.setLayoutProperty('mesh3d', 'visibility', 'visible')
+		map.setPaintProperty('mesh3d', 'fill-extrusion-color', [
+			'interpolate',
+			['linear'],
+			['get', selectedvar+'_diff'],
+			
+			-max_bin_val, colors[0],
+			-max_bin_val/2, colors[1],
+			0, colors[2],
+			max_bin_val/2, colors[3],
+			max_bin_val, colors[4]
+		]);
+		map.setPaintProperty('mesh3d', 'fill-extrusion-height', ['*', ['get', selectedvar+'_diff'], extrusionHeight]);
+
+	} 
+	// 2d mode
+	else {
+		console.log('2d mode');
+		map.setPitch(0);
+		map.rotateTo(0, {duration: 1000});
+		// make 3d-slider invisible
+		document.getElementById('3d-slider').style.display = 'none';
 		
-		-max_bin_val, colors[0],
-		-max_bin_val/2, colors[1],
-		0, colors[2],
-		max_bin_val/2, colors[3],
-		max_bin_val, colors[4]
-	]);
+		map.setLayoutProperty('mesh3d', 'visibility', 'none');
+		map.setLayoutProperty('mesh', 'visibility', 'visible');
+		map.setPaintProperty('mesh', 'fill-color', [
+			'interpolate',
+			['linear'],
+			['get', selectedvar+'_diff'],
+			
+			-max_bin_val, colors[0],
+			-max_bin_val/2, colors[1],
+			0, colors[2],
+			max_bin_val/2, colors[3],
+			max_bin_val, colors[4]
+		]);
+	}
 
 
+	if (map_in_3d) {
+	}
+
+	
 }
 
 
@@ -294,12 +279,12 @@ function makeChart() {
 	// find the value of the nth element, and slice the array to only include all numeric values that are larger than the 10th element
 	// slice the lineArray to the top 200 elements
 
-	top_lineArray = lineArray.slice(0, n);
-	top_keyArray = keyArray.slice(0, n);
-	top_placeArray = placeArray.slice(0, n);	
-	bottom_lineArray = lineArray.slice(-n);
-	bottom_keyArray = keyArray.slice(-n);
-	bottom_placeArray = placeArray.slice(-n);
+	top_lineArray = lineArray.slice(0, num_of_bars)
+	top_keyArray = keyArray.slice(0, num_of_bars)
+	top_placeArray = placeArray.slice(0, num_of_bars)	
+	bottom_lineArray = lineArray.slice(-num_of_bars)
+	bottom_keyArray = keyArray.slice(-num_of_bars)
+	bottom_placeArray = placeArray.slice(-num_of_bars)
 
 	
 	// var tenth = lineArray[200];
@@ -405,6 +390,74 @@ function updateLegend(){
 	document.getElementById('legend3').innerHTML = '⬆︎'+max_bin_val + ' (増加)'
 }
 
+
+function labelMinMax() {
+
+	// Add a popup to the polygon that has the highest value of the selected variable
+	const features = map.queryRenderedFeatures({ layers: ['mesh'] });
+
+	// find highest value
+	let maxVal = -Infinity;
+	let maxFeature = null;
+	for (const feature of features) {
+		// console.log(feature.properties);
+		const value = feature.properties[selectedvar+'_diff'];
+		if (value > maxVal) {
+			maxVal = value;
+			maxFeature = feature;
+		}
+	}
+
+	// find lowest value
+	let minVal = Infinity;
+	let minFeature = null;
+	for (const feature of features) {
+		const value = feature.properties[selectedvar+'_diff'];
+		if (value < minVal) {
+			minVal = value;
+			minFeature = feature;
+		}
+	}
+
+	// ------------------------------------------------
+	// create a custom popup for MAX
+	// ------------------------------------------------
+	maxPopup.className = 'custom-popup';
+	maxPopup.style.backgroundColor = colors[4];
+	maxPopup.innerHTML = '<div style="text-align:center;">⬆︎' + maxVal + '</div>';
+
+	// calculate the center of maxFeature
+	var maxcenter = turf.center(maxFeature);
+
+	// Position the custom popup on the map
+	var maxpopupCoordinates = maxcenter.geometry.coordinates; 
+	
+	// Add the custom popup to the map
+	var popupElement = new mapboxgl.Marker(maxPopup)
+	  .setLngLat(maxpopupCoordinates)
+	  .addTo(map);
+
+	// ------------------------------------------------
+	// create a custom popup for MIN
+	// ------------------------------------------------
+	minPopup.className = 'custom-popup';
+	minPopup.style.backgroundColor = colors[0];
+	minPopup.innerHTML = '<div style="text-align:center;">⬇︎' + minVal + '</div>';
+
+	// calculate the center of minFeature
+	var mincenter = turf.center(minFeature);
+
+	// Position the custom popup on the map
+	var minpopupCoordinates = mincenter.geometry.coordinates; 
+	
+	// Add the custom popup to the map
+	var popupElement = new mapboxgl.Marker(minPopup)
+	  .setLngLat(minpopupCoordinates)
+	  .addTo(map);
+
+	  
+}
+
 // ------------------------------------------------
 // depracated
 // ------------------------------------------------
@@ -437,3 +490,24 @@ function makeBox(num) {
 	}
 	return box;
 }
+
+function updateExtrusionLayer() {
+	console.log(selectedyear+'_'+selectedvar);
+	map.setPaintProperty('mesh', 'fill-extrusion-color', [
+		'interpolate',
+		['linear'],
+		['get', selectedyear+'_'+selectedvar],
+		0, 'rgba(0,255,0, 0.7)',
+		500, 'rgba(255,0,0, 0.7)'
+	]);
+
+	map.setPaintProperty('mesh', 'fill-extrusion-height', ['*', ['get', selectedyear+'_'+selectedvar], extrusionHeight]);
+	map.setPaintProperty('mesh', 'fill-extrusion-opacity', 0.8);
+
+
+}
+
+function changeMapStyle(style) {
+	map.setStyle(style);
+}
+
