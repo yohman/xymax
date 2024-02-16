@@ -20,8 +20,10 @@ Conversion tools gml → geojson
 A collection of various data visualizations related to Japan's real estate situation
 
 ## 2/16/2024
+![alt text](<images/tokyo story.gif>)
 
-<video controls src="images/tokyo story.mp4" title="Title"></video>
+- added 3D mode
+- color coded bar charts to match map bin colors
 
 ## 2/13/2024
 What has changed from 2011 to 2016?
