@@ -20,6 +20,7 @@ var num_of_bars 	= 150 		// number of elements to show in the chart
 var showTop 		= true		// show top or bottom elements
 var extrusionHeight = 50; 		// Default extrusion height
 var map_in_3d 		= false;	// Default 3d mode
+var active_layer 	= 'mesh';	// Default active layer
 
 const map = new mapboxgl.Map({
 	container: 'map',
@@ -45,7 +46,11 @@ document.getElementById('dropdown').addEventListener('change', function() {
 })
 
 document.getElementById('3d-slider').addEventListener('input', function() {
-	extrusionHeight = parseInt(this.value);
+	if (showTop) {
+		extrusionHeight = parseInt(this.value);
+	} else {
+		extrusionHeight = -parseInt(this.value);
+	}
 	updateExtrusionLayer_diff();
 });
 
@@ -61,6 +66,14 @@ document.querySelectorAll('input[type="radio"]').forEach(function(radio) {
     radio.addEventListener('change', function() {
 		// Update variable based on selected option
 		showTop = this.value === 'true';
+		
+		// if showTop is true, make extrusionHeight positive, else make it negative
+		if (showTop) {
+			extrusionHeight = Math.abs(extrusionHeight);
+		} else {
+			extrusionHeight = -Math.abs(extrusionHeight);
+		}
+		updateExtrusionLayer_diff();
 		makeChart();						
 		// Log the variable value
 		console.log('showTop:', showTop);
@@ -126,7 +139,7 @@ map.on('load', function () {
 
 	})
 
-	map.on('mousemove', 'mesh', (e) => {
+	map.on('mousemove', active_layer, (e) => {
 		if (e.features.length > 0) {
 
 			map.getCanvas().style.cursor = 'pointer'
@@ -156,7 +169,7 @@ map.on('load', function () {
 		
 	// When the mouse leaves the state-fill layer, update the feature state of the
 	// previously hovered feature.
-	map.on('mouseleave', 'mesh', () => {
+	map.on('mouseleave', active_layer, () => {
 		map.getCanvas().style.cursor = '';
 		popup.remove();
 	})
@@ -189,6 +202,7 @@ function updateExtrusionLayer_diff() {
 	// 3d mode
 	if (map_in_3d) {
 		console.log('3d mode');
+		active_layer = 'mesh3d';
 		map.setPitch(65);
 		// make 3d-slider visible
 		document.getElementById('3d-slider').style.display = 'block';
@@ -214,11 +228,12 @@ function updateExtrusionLayer_diff() {
 	// 2d mode
 	else {
 		console.log('2d mode');
+		active_layer = 'mesh';
 		map.setPitch(0);
 		map.rotateTo(0, {duration: 1000});
 		// make 3d-slider invisible
 		document.getElementById('3d-slider').style.display = 'none';
-		
+
 		map.setLayoutProperty('mesh3d', 'visibility', 'none');
 		map.setLayoutProperty('mesh', 'visibility', 'visible');
 		map.setPaintProperty('mesh', 'fill-color', [
@@ -234,11 +249,6 @@ function updateExtrusionLayer_diff() {
 		]);
 	}
 
-
-	if (map_in_3d) {
-	}
-
-	
 }
 
 
@@ -259,7 +269,7 @@ function makeChart() {
 	chart.innerHTML = ''
 
 	// get the features from the map
-	const features = map.queryRenderedFeatures({ layers: ['mesh'] });
+	const features = map.queryRenderedFeatures({ layers: [active_layer] });
 	// const features = map.queryRenderedFeatures({ layers: ['mesh-borders'] });
 
 	// sort the elements by greatest to smallest
@@ -394,7 +404,7 @@ function updateLegend(){
 function labelMinMax() {
 
 	// Add a popup to the polygon that has the highest value of the selected variable
-	const features = map.queryRenderedFeatures({ layers: ['mesh'] });
+	const features = map.queryRenderedFeatures({ layers: [active_layer] });
 
 	// find highest value
 	let maxVal = -Infinity;
@@ -407,7 +417,7 @@ function labelMinMax() {
 			maxFeature = feature;
 		}
 	}
-
+	console.log(maxFeature);
 	// find lowest value
 	let minVal = Infinity;
 	let minFeature = null;
@@ -418,7 +428,7 @@ function labelMinMax() {
 			minFeature = feature;
 		}
 	}
-
+	console.log(minFeature);
 	// ------------------------------------------------
 	// create a custom popup for MAX
 	// ------------------------------------------------

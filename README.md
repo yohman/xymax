@@ -15,10 +15,13 @@ Conversion tools gml → geojson
 - https://ozekik.github.io/plateaukit/cli/convert/
 
 
-
 # Log
 
 A collection of various data visualizations related to Japan's real estate situation
+
+## 2/16/2024
+
+<video controls src="images/tokyo story.mp4" title="Title"></video>
 
 ## 2/13/2024
 What has changed from 2011 to 2016?

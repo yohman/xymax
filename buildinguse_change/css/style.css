@@ -106,10 +106,6 @@ label {
     vertical-align: super;
 }
 
-.toggle-3d-label {
-    position: relative;
-    top: 3px;
-}
 
 .slider-label {
     font-size: 0.6rem;
@@ -197,4 +193,14 @@ label {
     border: 1px solid #bbb;
     /* add shadow */
     /* box-shadow: 0 2px 4px rgba(0,0,0,0.5); */
+}
+
+
+.toggle-3d-label {
+    position: relative;
+    top: 3px;
+}
+
+#3d-slider {
+    display: none;
 }
