@@ -119,6 +119,17 @@ map.on('load', function () {
 	})
 
 	map.addLayer({
+		id: 'mesh3d-highlight',
+		type: 'fill-extrusion',
+		source: 'my-data',
+		slot: 'top',
+		// set opacity to 0
+		paint: {
+			'fill-extrusion-opacity': 0
+		},
+	})
+
+	map.addLayer({
 		id: 'mesh',
 		type: 'fill',
 		// type: 'fill',
@@ -127,15 +138,14 @@ map.on('load', function () {
 	})
 
 	map.addLayer({
-		id: 'mesh-borders',
-		type: 'line',
+		id: 'mesh-highlight',
+		type: 'fill',
 		source: 'my-data',
 		layout: {},
-		paint: {
-			'line-color': '#666',
-			'line-width': 0.1 
+		slot: 'top',
+		layout: {
+			'visibility': 'none'
 		},
-		slot: 'top'
 
 	})
 
@@ -211,6 +221,7 @@ function updateExtrusionLayer_diff() {
 		map.rotateTo(-20, {duration: 1500});
 		map.setLayoutProperty('mesh', 'visibility', 'none')
 		map.setLayoutProperty('mesh3d', 'visibility', 'visible')
+		map.setLayoutProperty('mesh3d-highlight', 'visibility', 'visible');
 		map.setPaintProperty('mesh3d', 'fill-extrusion-color', [
 			'interpolate',
 			['linear'],
@@ -223,6 +234,7 @@ function updateExtrusionLayer_diff() {
 			max_bin_val, colors[4]
 		]);
 		map.setPaintProperty('mesh3d', 'fill-extrusion-height', ['*', ['get', selectedvar+'_diff'], extrusionHeight]);
+		map.setPaintProperty('mesh3d-highlight', 'fill-extrusion-height', ['*', ['get', selectedvar+'_diff'], extrusionHeight]);
 
 	} 
 	// 2d mode
@@ -235,6 +247,7 @@ function updateExtrusionLayer_diff() {
 		document.getElementById('3d-slider').style.display = 'none';
 
 		map.setLayoutProperty('mesh3d', 'visibility', 'none');
+		map.setLayoutProperty('mesh3d-highlight', 'visibility', 'none');
 		map.setLayoutProperty('mesh', 'visibility', 'visible');
 		map.setPaintProperty('mesh', 'fill-color', [
 			'interpolate',
@@ -258,11 +271,9 @@ function updateExtrusionLayer_diff() {
 
 function makeChart() {
 	// clear the arrays
-	lineArray = [];
-	keyArray = [];
-	placeArray = [];
-	// showTop = True;
-	
+	lineArray 	= [];
+	keyArray 	= [];
+	placeArray 	= [];
 
 	// get the info-panel and clear it
 	var chart = document.getElementById('info-panel');
@@ -270,7 +281,7 @@ function makeChart() {
 
 	// get the features from the map
 	const features = map.queryRenderedFeatures({ layers: [active_layer] });
-	// const features = map.queryRenderedFeatures({ layers: ['mesh-borders'] });
+	// const features = map.queryRenderedFeatures({ layers: ['mesh-highlight'] });
 
 	// sort the elements by greatest to smallest
 	features.sort((a, b) => b.properties[selectedvar+'_diff'] - a.properties[selectedvar+'_diff']);
@@ -278,9 +289,9 @@ function makeChart() {
 	// loop through every element in features
 	features.forEach(element => {
 		// add values to arrays
-		const lineLength = element.properties[selectedvar+'_diff'];
-		const key_code = element.properties['KEY_CODE_left'];
-		const place = element.properties['CITYNAME'];
+		const lineLength 	= element.properties[selectedvar+'_diff'];
+		const key_code 		= element.properties['KEY_CODE_left'];
+		const place 		= element.properties['CITYNAME'];
 		lineArray.push(lineLength);
 		keyArray.push(key_code);
 		placeArray.push(place);
@@ -289,12 +300,12 @@ function makeChart() {
 	// find the value of the nth element, and slice the array to only include all numeric values that are larger than the 10th element
 	// slice the lineArray to the top 200 elements
 
-	top_lineArray = lineArray.slice(0, num_of_bars)
-	top_keyArray = keyArray.slice(0, num_of_bars)
-	top_placeArray = placeArray.slice(0, num_of_bars)	
-	bottom_lineArray = lineArray.slice(-num_of_bars)
-	bottom_keyArray = keyArray.slice(-num_of_bars)
-	bottom_placeArray = placeArray.slice(-num_of_bars)
+	top_lineArray 		= lineArray.slice(0, num_of_bars)
+	top_keyArray 		= keyArray.slice(0, num_of_bars)
+	top_placeArray 		= placeArray.slice(0, num_of_bars)	
+	bottom_lineArray 	= lineArray.slice(-num_of_bars)
+	bottom_keyArray 	= keyArray.slice(-num_of_bars)
+	bottom_placeArray 	= placeArray.slice(-num_of_bars)
 
 	
 	// var tenth = lineArray[200];
@@ -338,10 +349,10 @@ function makeChart() {
 		textposition: 'none',
 		hovertemplate: '%{text}: %{x}',
 		marker: {
-			color: lineArrayColors, // Values for color scale
+			color: 		lineArrayColors, // Values for color scale
 			colorscale: [[0, colors[0]], [0.5, colors[2]], [1, colors[4]]], // Custom colorscale
-			cmin: -max_bin_val, // Minimum value for color scale
-			cmax: max_bin_val, // Maximum value for color scale
+			cmin: 		-max_bin_val, // Minimum value for color scale
+			cmax: 		max_bin_val, // Maximum value for color scale
 			colorbar: {
 			  title: '' // Title for color bar
 			},
@@ -374,18 +385,37 @@ function makeChart() {
 		console.log('Hovered Y:', yValue);
 		console.log('Hovered keycode:', keyArray[yValue]);
 		highlightFeature(yValue);
-
 	});
-
+	// Add hover off event listener to the plotly chart
+	document.getElementById('info-panel').on('plotly_unhover', function(data){
+		// Handle hover off event
+		console.log('Mouse left the chart.');
+		map.setPaintProperty('mesh3d-highlight','fill-extrusion-opacity',0)
+		map.setLayoutProperty('mesh-highlight', 'visibility', 'none');
+	});
 }
 
-// function to highlight a feature from mesh-borders by KEY_CODE
+// function to highlight a feature from mesh-highlight by KEY_CODE
 function highlightFeature(pos) {
 
-	// filter by key_code and paint the feature with a different color
-	map.setFilter('mesh-borders', ['==', 'KEY_CODE_left', keyArray[pos]]);
-	map.setPaintProperty('mesh-borders', 'line-color', 'black');
-	map.setPaintProperty('mesh-borders', 'line-width', 2);	
+	// if 3d mode is on, set the visibility of mesh3d-highlight to visible
+	if (map_in_3d) {
+		map.setPaintProperty('mesh3d-highlight','fill-extrusion-opacity',1)
+		// map.setLayoutProperty('mesh3d-highlight', 'visibility', 'visible');
+		// filter by key_code and paint the feature with a different color
+		map.setFilter('mesh3d-highlight', ['==', 'KEY_CODE_left', keyArray[pos]]);
+		map.setPaintProperty('mesh3d-highlight', 'fill-extrusion-color', 'yellow');
+		// map.setPaintProperty('mesh3d-highlight', 'line-width', 2);	
+	}
+	// if 3d mode is off, set the visibility of mesh-highlight to visible
+	else {
+		map.setLayoutProperty('mesh-highlight', 'visibility', 'visible');
+		// filter by key_code and paint the feature with a different color
+		map.setFilter('mesh-highlight', ['==', 'KEY_CODE_left', keyArray[pos]]);
+		map.setPaintProperty('mesh-highlight', 'fill-color', 'yellow');
+		map.setPaintProperty('mesh-highlight', 'fill-outline-color', 'black');
+		// map.setPaintProperty('mesh-highlight', 'line-width', 2);	
+	}
 }
 
 function updateLegend(){
@@ -417,7 +447,6 @@ function labelMinMax() {
 			maxFeature = feature;
 		}
 	}
-	console.log(maxFeature);
 	// find lowest value
 	let minVal = Infinity;
 	let minFeature = null;
@@ -428,7 +457,7 @@ function labelMinMax() {
 			minFeature = feature;
 		}
 	}
-	console.log(minFeature);
+
 	// ------------------------------------------------
 	// create a custom popup for MAX
 	// ------------------------------------------------
@@ -467,6 +496,36 @@ function labelMinMax() {
 
 	  
 }
+
+// English
+// Function to rotate a 3D map 360 degrees
+function rotateMap() {
+    var bearing = 0; // Initial bearing angle
+
+    // Function to incrementally rotate the map
+    function rotate() {
+        map.rotateTo(bearing, {
+            duration: 500, // Duration of each rotation step in milliseconds
+            easing: function(t) {
+                return t; // Linear easing
+            }
+        });
+
+        bearing += 10; // Increment bearing angle
+        if (bearing >= 360) {
+            bearing = 0; // Reset bearing angle to start a new rotation
+        }
+
+        // Repeat the rotation after a delay
+        // setTimeout(rotate, 500); // Delay between each rotation step in milliseconds
+    }
+
+    // Start the rotation
+    rotate();
+}
+
+// Call the rotateMap function to start the rotation
+rotateMap();
 
 // ------------------------------------------------
 // depracated
