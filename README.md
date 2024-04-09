@@ -69,6 +69,6 @@ Where are different building uses located in Tokyo?
 - Height is based on area (larger footprint = taller polygon)
 - Swipe (left ⇔ right)
 
-[![Alt text](web/images/swipe.png)](https://yohman.github.io/xymax/web/swipe.html)
+![alt text](sandbox/images/swipe.png)
 
-[https://yohman.github.io/xymax/web/swipe.html](https://yohman.github.io/xymax/web/swipe.html)
+[https://yohman.github.io/xymax/sandbox/swipe.html](https://yohman.github.io/xymax/sandbox/swipe.html)
