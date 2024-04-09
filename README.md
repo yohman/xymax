@@ -1,23 +1,45 @@
 # XYMAX+Yoh
 
-## Resources
-
-Data
-
-Plateau "real-time" data:
-
-- https://www.geospatial.jp/ckan/dataset/plateau
-
-
-Conversion tools gml → geojson
-
-- https://github.com/GeoPythonJP/citygml-convert-tools
-- https://ozekik.github.io/plateaukit/cli/convert/
-
-
-# Log
+# Production Log
 
 A collection of various data visualizations related to Japan's real estate situation
+
+
+## 4/9/2024
+
+「建物の用途は時間の経過とともにどのように変化したか。」
+
+→ [Enter site](https://yohman.github.io/xymax/buildinguse_change/)
+
+### Features
+
+#### Changes from 2011 to 2016
+
+<img src="images/hover.gif" width="300" class="project-thumb">
+
+#### Different building uses
+
+<img src="images/buildinguse.gif" width="300" class="project-thumb">
+
+#### 3D
+
+<img src="images/3d.gif" width="300" class="project-thumb">
+
+#### Switch to show either top increase or decrease 
+
+<img src="images/topbottom.gif" width="300" class="project-thumb">
+
+#### Change the color scale
+
+<img src="images/legend.gif" width="300" class="project-thumb">
+
+<!-- 
+
+[![alt text](images/site.jpg)](https://yohman.github.io/xymax/buildinguse_change/) -->
+
+→ [Enter site](https://yohman.github.io/xymax/buildinguse_change/)
+
+
 
 ## 2/16/2024
 ![alt text](<images/tokyo story.gif>)

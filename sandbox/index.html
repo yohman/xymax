@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiple Map Styles</title>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+    <style>
+    body { margin: 0; padding: 0; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    .style-buttons { position: absolute; top: 10px; right: 10px; z-index: 1; }
+    .style-button { margin: 5px; padding: 5px 10px; background-color: #0078D4; color: white; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="style-buttons">
+    <button class="style-button" onclick="setMapStyle('mapbox://styles/mapbox/streets-v11')">Streets</button>
+    <button class="style-button" onclick="setMapStyle('mapbox://styles/mapbox/satellite-v9')">Satellite</button>
+    <button class="style-button" onclick="setMapStyle('mapbox://styles/mapbox/outdoors-v11')">Outdoors</button>
+    <button class="style-button" onclick="setMapStyle('mapbox://styles/yohman/clmjuspsk01u901r6hd6o53ld')">2011</button>
+  </div>
+
+  <script>
+	// mapboxgl.accessToken = 'pk.eyJ1IjoieW9obWFuIiwiYSI6IkxuRThfNFkifQ.u2xRJMiChx914U7mOZMiZw';
+
+    // var map = new mapboxgl.Map({
+    //   container: 'map',
+    //   style: 'mapbox://styles/yohman/clmjuspsk01u901r6hd6o53ld',
+    //   center: [139.748,35.680],
+    //     zoom: 14.6,
+    //     pitch: 45
+    // });
+
+
+	mapboxgl.accessToken = 'pk.eyJ1IjoieW9obWFuIiwiYSI6IkxuRThfNFkifQ.u2xRJMiChx914U7mOZMiZw';
+    const map = new mapboxgl.Map({
+        container: 'map',
+        // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+        style: 'mapbox://styles/yohman/clmjuspsk01u901r6hd6o53ld',
+        
+        center: [139.748,35.680],
+        zoom: 14.6,
+        pitch: 45
+    });
+
+
+
+    function setMapStyle(styleUrl) {
+      map.setStyle(styleUrl);
+    }
+  </script>
+</body>
+</html>
