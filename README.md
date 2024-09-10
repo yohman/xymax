@@ -5,6 +5,17 @@
 A collection of various data visualizations related to Japan's real estate situation
 
 
+## 9/10/2024
+
+How has Tokyo's land use changed since 1996?
+
+<img src="images/areause.png" width=400>
+
+This site observes changes in Tokyo's land use over time. It explores neighborhood change, and how different land uses have shifted in a quarter century.
+
+→ [Enter site](https://yohman.github.io/xymax/areause/)
+
+
 ## 4/9/2024
 
 「建物の用途は時間の経過とともにどのように変化したか。」
