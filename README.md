@@ -9,7 +9,7 @@ A collection of various data visualizations related to Japan's real estate situa
 
 How has Tokyo's land use changed since 1996?
 
-<img src="images/areause.png" width=400>
+<img src="images/areause.gif" width=300>
 
 This site observes changes in Tokyo's land use over time. It explores neighborhood change, and how different land uses have shifted in a quarter century.
 
