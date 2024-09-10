@@ -1,0 +1,588 @@
+<!-- create a maproom using mapboxgl using access key 'pk.eyJ1IjoieW9obWFuIiwiYSI6IkxuRThfNFkifQ.u2xRJMiChx914U7mOZMiZw'. the maproom should have a floating info panel on the top left with a title for the project 東京物語 and a short description about the project. The map should be centered on Tokyo, with a custom map style 'mapbox://styles/yohman/ckonilpb708eb19oadf970pr8'. It should have a function that adds a 'mesh' layer to the map from 'data/tokyo_mesh_p.geojson', with the option to select which variable to map, the default being '2023_building_count_percentile'. The layer should be drawn as a choropleth layer, with the four breakpoints 25, 50, 75 and 100. Values under 50 should be a red gradient, and values over 50 in green. The mesh layer should have a on mousemove feature that highlights the outline of the polygon with line-width=3 and in yellow. The data for the hovered polygon should be shown as a pop-up. -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Tokyo Story Maproom</title>
+	<link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet">
+	<script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-sparklines/2.1.2/jquery.sparkline.min.js"></script>
+	
+
+	<style>
+		body { margin: 0; padding: 0; }
+		#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+		.info-panel {
+			position: absolute;
+			top: 10px;
+			left: 10px;
+			background: white;
+			padding: 10px;
+			border-radius: 5px;
+			box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+			z-index: 1;
+		}
+		.info-panel h1 {
+			font-size: 2.2em;
+			margin: 0;
+		}
+		.info-panel p {
+			font-size: 1em;
+			margin: 5px 0;
+		}
+		.datatable-cell-header {
+			width: 100px;
+		}
+		/* Make sure to target the content inside the Mapbox popup */
+		.mapboxgl-popup-content {
+			max-width: 600px;
+		}
+
+		.info-panel table {
+            border-collapse: collapse;
+            width: 100%; /* Optional to make table fill the popup */
+			background-color: whitesmoke;
+        }
+
+        /* Apply styles to td elements inside the popup */
+        .info-panel td {
+            width: 60px;
+            /* height: 50px; */
+            /* border: 1px solid black; */
+            text-align: center;
+            vertical-align: middle;
+			padding: 2px;
+        }
+
+		.info-panel h2 {
+			font-size: 1.2em;
+			font-weight: 200;
+			margin: 0;
+			font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+		}
+
+		.info-panel td,th {
+			font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+			text-align: left;
+			vertical-align: bottom;
+			font-size: 0.8em;
+			font-weight: 100;
+			padding: 2px;
+		}
+		
+		.bar-style {
+			display: flex; 
+			align-items: center; 
+			justify-content: left;
+			height: 20px;;
+		}
+		.button-style {
+			background-color: lightblue;
+			/* border: 1px solid black;
+			border-radius: 5px; */
+			padding: 5px;
+			margin: 5px;
+			cursor: pointer;
+			border: none;
+			/*add on hover effect*/
+
+
+		}
+		.button-style:hover {
+			background-color: rgb(75, 156, 183);;
+		}
+		.button-style-selected {
+			background-color: rgb(75, 156, 183);;
+			border: 2px solid rgb(92, 92, 92);
+
+			margin: 5px;
+			cursor: pointer;
+		}
+		#popup {
+			font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+			font-size: 1.2em;
+			text-align: center;
+			line-height: normal;
+		}
+
+        .legend {
+			position: absolute;
+			bottom: 35px;
+			left: 10px;
+			background: white;
+			padding: 10px;
+			border-radius: 5px;
+			box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+			z-index: 1;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* all caps */
+            text-transform: uppercase;
+            font-size: 0.8em;
+            color: #555;
+            font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+        }
+        .legend-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .legend-color-box {
+            width: 30px;
+            height: 30px;
+        }
+
+        .legend-labels {
+            display: flex;
+            justify-content: center;
+            margin-top: 3px;
+        }
+
+        .legend-label {
+            width: 32px; /* Adjust the width to center the label between two divs */
+            text-align: center;
+            font-size: 0.7em;
+            color: #aaa;
+        }
+
+	</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="info-panel">
+	<h1>東京物語</h1>
+	<p>A project to map various urban statistics in Tokyo using mesh layers.</p>
+	<p>Select a variable to map:</p>
+	<!-- add a drop down with id 'map-variable' -->
+	<!-- <select id="map-variable" ></select> -->
+	<div id="button-container"></div>
+
+	<!-- add a div with class 'data-panel -->
+	<div class="data-panel"></div>
+</div>
+
+<div class="legend">
+    Change from 1996 to 2023
+    <div class="legend-container">
+        <div class="legend-color-box" style="background-color: #a50026;"></div>
+        <div class="legend-color-box" style="background-color: #d73027;"></div>
+        <div class="legend-color-box" style="background-color: #f46d43;"></div>
+        <div class="legend-color-box" style="background-color: #fdae61;"></div>
+        <div class="legend-color-box" style="background-color: #a6d96a;"></div>
+        <div class="legend-color-box" style="background-color: #66bd63;"></div>
+        <div class="legend-color-box" style="background-color: #1a9850;"></div>
+        <div class="legend-color-box" style="background-color: #006837;"></div>
+    </div>
+
+    <div class="legend-labels">
+        <div class="legend-label">-75</div>
+        <div class="legend-label">-50</div>
+        <div class="legend-label">-25</div>
+        <div class="legend-label">0</div> <!-- Add 0 label for balance -->
+        <div class="legend-label">+25</div>
+        <div class="legend-label">+50</div>
+        <div class="legend-label">+75</div>
+    </div>
+</div>
+
+<script>
+	// Initialize the map
+	mapboxgl.accessToken = 'pk.eyJ1IjoieW9obWFuIiwiYSI6IkxuRThfNFkifQ.u2xRJMiChx914U7mOZMiZw';
+
+	// monochrome day
+	mapbox_style = 'mapbox://styles/yohman/cm0n91f7n01bt01rbdjaj4g3r';
+	// mapbox_style = 'mapbox://styles/yohman/cm0w70x4e00lw01pq9f0t2ros';
+	
+
+	// monochrome dusk
+	// mapbox_style = 'mapbox://styles/yohman/cm0n8u3sm001501pq0rcg3i7b';
+
+
+	const map = new mapboxgl.Map({
+		container: 'map',
+		// style: 'mapbox://styles/mapbox/standard',
+
+		style: mapbox_style,
+		center: [139.6917, 35.6895], // Centered on Tokyo
+		zoom: 10
+	});
+
+	map.on('load', function () {
+
+
+		// Add a dropdown to the info panel with a list of variables to select the variable and update the map
+
+		const variables = [
+			// '2023_office_total_use_area_percentile',
+			// '2023_commercial_total_use_area_percentile',
+			// '2023_hotel_total_use_area_percentile',
+			// '2023_house_total_use_area_percentile',
+			// '2023_apartment_total_use_area_percentile',
+			// '2023_logistics_total_use_area_percentile',
+			// '2023_total_use_area_percentile',
+			'diff_office_total_use_area_percentile',
+			'diff_commercial_total_use_area_percentile',
+			'diff_hotel_total_use_area_percentile',
+			'diff_house_total_use_area_percentile',
+			'diff_logistics_total_use_area_percentile',
+			'diff_total_use_area_percentile',
+		];
+		const variable_titles = [
+			'Office',
+			'Commercial',
+			'Hotel',
+			'House',
+			'Logistics',
+			'Total',
+		];
+
+		selected_variable = 'diff_total_use_area_percentile';
+
+		variables.forEach(variable => {
+			const button = document.createElement('button');
+			// assign button-style class to the button
+			button.classList.add('button-style');
+			button.textContent = variable_titles[variables.indexOf(variable)];
+			button.addEventListener('click', function () {
+				updateMeshLayer(variable);
+			});
+			document.getElementById('button-container').appendChild(button);
+			if (variable == selected_variable) {
+				// give it button-style-selected class
+				button.classList.add('button-style-selected');
+			}
+		});
+
+
+
+		
+
+
+		let popup = new mapboxgl.Popup({
+			closeButton: false,
+			closeOnClick: false
+		});
+
+		// Function to add mesh layer to the map
+		function addMeshLayer(variable = 'diff_total_use_area_percentile') {
+			if (map.getLayer('mesh-layer')) {
+				map.removeLayer('mesh-layer');
+				map.removeSource('mesh-data');
+			}
+
+			map.addSource('mesh-data', {
+				'type': 'geojson',
+				'data': 'data/tokyo_mesh_p.geojson'
+			});
+			
+			map.addLayer({
+				'id': 'mesh-layer',
+				'type': 'fill',
+				'slot': 'bottom',
+				'source': 'mesh-data',
+				'paint': {
+					'fill-color': [
+						'step',
+						['get', variable],
+						'#a50026', -75,
+						'#d73027', -50,
+						'#f46d43', -25,
+						'#fdae61', 0, // redish
+						'#a6d96a', 25,// greenish
+						'#66bd63', 50,
+						'#1a9850', 75,
+						'#006837'
+					],
+					// 'fill-opacity': 0.85
+				}
+			});
+
+			map.addLayer({
+				'id': 'mesh-outline',
+				'type': 'line',
+				'source': 'mesh-data',
+				'paint': {
+					'line-color': 'yellow',
+					'line-width': 3
+				},
+				'filter': ['==', 'id', '']
+			});
+
+			// Add mousemove event to highlight and show data
+			map.on('mousemove', 'mesh-layer', function (e) {
+				map.getCanvas().style.cursor = 'pointer';
+
+				if (e.features.length > 0) {
+					const feature = e.features[0].properties;
+					const id = feature.id;
+					// Highlight the polygon
+					map.setFilter('mesh-outline', ['==', 'id', id]);
+
+					// Update popup and set it to the feature's location
+					popup.setLngLat(e.lngLat)
+						.setHTML(createPopupContent(feature, variable))
+						.addTo(map);
+					// add the popup content to the info panel
+					$('.data-panel').html(createDataPanelContent(feature, variable));
+				}
+			});
+
+			// Reset cursor, remove highlight and popup on mouseleave
+			map.on('mouseleave', 'mesh-layer', function () {
+				map.getCanvas().style.cursor = '';
+				map.setFilter('mesh-outline', ['==', 'id', '']);
+				
+				// Remove the popup on mouseout
+				popup.remove();
+
+				// Clear the info panel
+				$('.data-panel').html('');
+			});
+		}
+
+		// Call the function to add the mesh layer with the default variable
+		addMeshLayer();
+
+'#a50026', -75,'#d73027', -50,'#f46d43', -25,'#fdae61', 0,'#a6d96a', 25,'#66bd63',50,'#1a9850', 75,'#006837'
+
+		// function update mesh layer
+		function updateMeshLayer(variable) {
+			console.log('Updating mesh layer with variable:', variable);
+			map.setPaintProperty('mesh-layer', 'fill-color', [
+				'step',
+				['get', variable],
+						'#a50026', -75,
+						'#d73027', -50,
+						'#f46d43', -25,
+						'#fdae61', 0, // redish
+						'#a6d96a', 25,// greenish
+						'#66bd63', 50,
+						'#1a9850', 75,
+						'#006837'
+			]);
+
+			// Update the popup content
+			map.on('mousemove', 'mesh-layer', function (e) {
+				if (e.features.length > 0) {
+					const feature = e.features[0].properties;
+					const id = feature.id;
+					popup.setHTML(createPopupContent(feature, variable));
+					// add the popup content to the info panel
+					$('.data-panel').html(createDataPanelContent(feature, variable));
+				}
+			});
+
+			// Update the button styles
+			$('.button-style').removeClass('button-style-selected');
+
+			// find the button with the textContent equal to the variable
+			// add the button-style-selected class to it
+			if (variable == 'diff_office_total_use_area_percentile') {
+				$('button:contains("Office")').addClass('button-style-selected');
+			} else if (variable == 'diff_commercial_total_use_area_percentile') {
+				$('button:contains("Commercial")').addClass('button-style-selected');
+			} else if (variable == 'diff_hotel_total_use_area_percentile') {
+				$('button:contains("Hotel")').addClass('button-style-selected');
+			} else if (variable == 'diff_house_total_use_area_percentile') {
+				$('button:contains("House")').addClass('button-style-selected');
+			} else if (variable == 'diff_logistics_total_use_area_percentile') {
+				$('button:contains("Logistics")').addClass('button-style-selected');
+			} else if (variable == 'diff_total_use_area_percentile') {
+				$('button:contains("Total")').addClass('button-style-selected');
+			}
+			
+		}
+
+		// function to create popup content
+		// show the variable value in a large font
+		// if the value is positive, show as green, else red
+		// title is "From 1996 to 2023"
+		function createPopupContent(feature, variable) {
+			// replace 'diff_' with '' in the variable name
+			core_variable = variable.replaceAll('diff_', '');
+			title_variable = core_variable.replaceAll('_', ' ');
+			html = `<div id="popup">${title_variable.toUpperCase()}`;
+
+			// if feature[variable] is positive, show as green, else red
+			if (feature[variable] > 0) {
+				html += '<br>has increased <br>';
+				html += `<span style="font-size:4em;color: green;">+${feature[variable]}</span>`;
+			} else {
+				html += '<br>has decreased <br>';
+				html += `<span style="font-size:4em;color: red;">${feature[variable]}</span>`;
+			}
+
+			html += `</br>percentile points from 1996 to 2023`;
+			html += `</div>`;
+
+			return html;
+		}
+
+
+
+		// function to create data panel content
+		function createDataPanelContent(feature, variable) {
+			// replace 'diff_' with '' in the variable name
+			core_variable = variable.replaceAll('diff_', '');
+			title_variable = core_variable.replaceAll('_', ' ');
+			
+			core_variable_1996 = '1996_' + core_variable;
+			core_variable_2001 = '2001_' + core_variable;
+			core_variable_2006 = '2006_' + core_variable;
+			core_variable_2011 = '2011_' + core_variable;
+			core_variable_2016 = '2016_' + core_variable;
+			core_variable_2023 = '2023_' + core_variable;
+
+			// put them in an array
+			spark_vars = [core_variable_1996, core_variable_2001, core_variable_2006, core_variable_2011, core_variable_2016, core_variable_2023];
+
+			html = `<div id="popup"><h1>${title_variable}</h1>`;
+
+			// if feature[variable] is positive, show as green, else red
+			if (feature[variable] > 0) {
+				html += `<span style="font-size:4em;color: green;">${feature[variable]}</span>`;
+			} else {
+				html += `<span style="font-size:4em;color: red;">${feature[variable]}</span>`;
+			}
+
+			// categories are office, commercial, hotel, house, apartment, logistics, total
+			html = `<br><h2>Yearly Breakdown</h2>
+				<table>
+					<tr>
+						<th>Year</th>
+						<th>Office</th>
+						<th>Commercial</th>
+						<th>Hotel</th>
+						<th>House</th>
+						<th>Apartment</th>
+						<th>Logistics</th>
+						<th>Total</th>
+					</tr>
+					<tr>
+						<td>1996</td>
+						<td>${createBar(feature['1996_office_total_use_area_percentile'], '#81D4FA')}</td>
+						<td>${createBar(feature['1996_commercial_total_use_area_percentile'], '#80CBC4')}</td>
+						<td>${createBar(feature['1996_hotel_total_use_area_percentile'], '#C5E1A5')}</td>
+						<td>${createBar(feature['1996_house_total_use_area_percentile'], '#FFE082')}</td>
+						<td>${createBar(feature['1996_apartment_total_use_area_percentile'], '#FFAC92')}</td>
+						<td>${createBar(feature['1996_logistics_total_use_area_percentile'], '#F490B1')}</td>
+						<td>${createBar(feature['1996_total_use_area_percentile'], '#A0A9DA')}</td>
+					</tr>
+					<tr>
+						<td>2001</td>
+						<td>${createBar(feature['2001_office_total_use_area_percentile'], '#81D4FA')}</td>
+						<td>${createBar(feature['2001_commercial_total_use_area_percentile'], '#80CBC4')}</td>
+						<td>${createBar(feature['2001_hotel_total_use_area_percentile'], '#C5E1A5')}</td>
+						<td>${createBar(feature['2001_house_total_use_area_percentile'], '#FFE082')}</td>
+						<td>${createBar(feature['2001_apartment_total_use_area_percentile'], '#FFAC92')}</td>
+						<td>${createBar(feature['2001_logistics_total_use_area_percentile'], '#F490B1')}</td>
+						<td>${createBar(feature['2001_total_use_area_percentile'], '#A0A9DA')}</td>
+					</tr>
+					<tr>
+						<td>2006</td>
+						<td>${createBar(feature['2006_office_total_use_area_percentile'], '#81D4FA')}</td>
+						<td>${createBar(feature['2006_commercial_total_use_area_percentile'], '#80CBC4')}</td>
+						<td>${createBar(feature['2006_hotel_total_use_area_percentile'], '#C5E1A5')}</td>
+						<td>${createBar(feature['2006_house_total_use_area_percentile'], '#FFE082')}</td>
+						<td>${createBar(feature['2006_apartment_total_use_area_percentile'], '#FFAC92')}</td>
+						<td>${createBar(feature['2006_logistics_total_use_area_percentile'], '#F490B1')}</td>
+						<td>${createBar(feature['2006_total_use_area_percentile'], '#A0A9DA')}</td>
+					</tr>
+					<tr>
+						<td>2011</td>
+						<td>${createBar(feature['2011_office_total_use_area_percentile'], '#81D4FA')}</td>
+						<td>${createBar(feature['2011_commercial_total_use_area_percentile'], '#80CBC4')}</td>
+						<td>${createBar(feature['2011_hotel_total_use_area_percentile'], '#C5E1A5')}</td>
+						<td>${createBar(feature['2011_house_total_use_area_percentile'], '#FFE082')}</td>
+						<td>${createBar(feature['2011_apartment_total_use_area_percentile'], '#FFAC92')}</td>
+						<td>${createBar(feature['2011_logistics_total_use_area_percentile'], '#F490B1')}</td>
+						<td>${createBar(feature['2011_total_use_area_percentile'], '#A0A9DA')}</td>
+					</tr>
+					<tr>
+						<td>2016</td>
+						<td>${createBar(feature['2016_office_total_use_area_percentile'], '#81D4FA')}</td>
+						<td>${createBar(feature['2016_commercial_total_use_area_percentile'], '#80CBC4')}</td>
+						<td>${createBar(feature['2016_hotel_total_use_area_percentile'], '#C5E1A5')}</td>
+						<td>${createBar(feature['2016_house_total_use_area_percentile'], '#FFE082')}</td>
+						<td>${createBar(feature['2016_apartment_total_use_area_percentile'], '#FFAC92')}</td>
+						<td>${createBar(feature['2016_logistics_total_use_area_percentile'], '#F490B1')}</td>
+						<td>${createBar(feature['2016_total_use_area_percentile'], '#A0A9DA')}</td>
+					</tr>
+					<tr>
+						<td>2023</td>
+						<td>${createBar(feature['2023_office_total_use_area_percentile'], '#81D4FA')}</td>
+						<td>${createBar(feature['2023_commercial_total_use_area_percentile'], '#80CBC4')}</td>
+						<td>${createBar(feature['2023_hotel_total_use_area_percentile'], '#C5E1A5')}</td>
+						<td>${createBar(feature['2023_house_total_use_area_percentile'], '#FFE082')}</td>
+						<td>${createBar(feature['2023_apartment_total_use_area_percentile'], '#FFAC92')}</td>
+						<td>${createBar(feature['2023_logistics_total_use_area_percentile'], '#F490B1')}</td>
+						<td>${createBar(feature['2023_total_use_area_percentile'], '#A0A9DA')}</td>
+
+					</tr>
+				</table>
+			`;
+			html += `</div>`;
+
+			return html;
+
+		}
+
+		function createBar(value, color) {
+			// divide the value by 2 and round to the nearest integer
+			// if value is undefined, half_value will be NaN
+			if (isNaN(value)) {
+				half_value = 0;
+				value = 'N/A';
+			}
+			else {
+				half_value = Math.round(value / 2);
+			}
+			return `<div class="bar-style" style="width: ${half_value}px; background-color: ${color};">${value}</div>`;
+		}
+
+		function addSparkline() {
+			// Data for the sparkline
+			const data = [5, 6, 7, 9, 4, 8, 6];
+			
+			// Create a new span element with an ID
+			const $sparkline = $('<span id="sparkline"></span>');
+
+			// Append the new span to the div
+			$('#popup').append($sparkline);
+
+			// Initialize the sparkline in the newly added span
+			$sparkline.sparkline(data, {
+				type: 'line', // You can also use 'bar', 'pie', etc.
+				width: '200px',
+				height: '50px',
+				lineColor: '#f00',  // Line color
+				fillColor: '#fee'   // Fill under the line color
+			});
+		}
+ 
+
+		// function createSparkline(spark_vars) {
+		// 	// create a div with id 'sparkline'
+		// 	// create a sparkline with the spark_vars
+		// 	// return the html
+		// 	html = `<div id="sparkline"></div>`;
+		// 	html += `<script>$("#sparkline").sparkline([5, 6, 7, 9, 4, 8, 6], { type: 'line' })`;
+		// 	return html;
+		// }
+	});
+
+
+</script>
+
+</body>
+</html>
