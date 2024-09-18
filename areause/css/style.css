@@ -1,0 +1,206 @@
+body { 
+    margin: 0; 
+    padding: 0; 
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+
+}
+#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+.info-panel {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+    max-width: 600px;
+    z-index: 1;
+}
+.info-panel h1 {
+    font-size: 2.2em;
+    margin: 0;
+}
+.info-panel p {
+    font-size: 1em;
+    margin: 15px;
+}
+
+.info-panel .author {
+    font-size: 1em;
+    font-style: italic;
+    color: #555;
+    margin: 5px 0;
+}
+
+.datatable-cell-header {
+    width: 100px;
+}
+/* Make sure to target the content inside the Mapbox popup */
+.mapboxgl-popup-content {
+    max-width: 600px;
+}
+
+.info-panel table {
+    border-collapse: collapse;
+    width: 100%; /* Optional to make table fill the popup */
+    background-color: whitesmoke;
+}
+
+/* Apply styles to td elements inside the popup */
+.info-panel td {
+    width: 60px;
+    /* height: 50px; */
+    /* border: 1px solid black; */
+    text-align: center;
+    vertical-align: middle;
+    padding: 2px;
+}
+
+.info-panel h2 {
+    font-size: 1.2em;
+    font-weight: 200;
+    margin: 0;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+.info-panel td,th {
+    font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    text-align: left;
+    vertical-align: bottom;
+    font-size: 0.8em;
+    font-weight: 100;
+    padding: 2px;
+}
+
+.bar-style {
+    display: flex; 
+    align-items: center; 
+    justify-content: left;
+    height: 20px;;
+}
+.button-style {
+    background-color: lightblue;
+    /* border: 1px solid black;
+    border-radius: 5px; */
+    padding: 5px;
+    margin: 5px;
+    cursor: pointer;
+    border: none;
+    /*add on hover effect*/
+
+
+}
+.button-style:hover {
+    background-color: rgb(75, 156, 183);;
+}
+.button-style-selected {
+    background-color: rgb(75, 156, 183);;
+    border: 2px solid rgb(92, 92, 92);
+
+    margin: 5px;
+    cursor: pointer;
+}
+#popup {
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 1.2em;
+    text-align: center;
+    line-height: normal;
+}
+
+.legend {
+    position: absolute;
+    bottom: 35px;
+    left: 10px;
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+    z-index: 1;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* all caps */
+    text-transform: uppercase;
+    font-size: 0.8em;
+    color: #555;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+.legend-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 5px;
+}
+
+.legend-color-box {
+    width: 30px;
+    height: 30px;
+}
+
+.legend-labels {
+    display: flex;
+    justify-content: center;
+    margin-top: 3px;
+}
+
+.legend-label {
+    width: 32px; /* Adjust the width to center the label between two divs */
+    text-align: center;
+    font-size: 0.7em;
+    color: #aaa;
+}
+
+/* Toggle data button slider */
+/* Toggle Button Styling */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.4s;
+}
+
+input:checked + .slider {
+    background-color: #2196F3;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
