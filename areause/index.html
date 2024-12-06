@@ -86,7 +86,7 @@
 		
 		// Create a popup, but don't add it to the map yet.
 		let usePercentile = false;  
-		let selected_variable = 'diff_total_use_area';
+		let selected_variable = 'Ω';
 		let popup = new mapboxgl.Popup({
 			closeButton: false,
 			closeOnClick: false
@@ -223,7 +223,7 @@
 
 			map.addSource('mesh-data', {
 				'type': 'geojson',
-				'data': 'data/tokyo_mesh_p.geojson'
+				'data': 'data/tokyo_mesh_2.geojson'
 			});	
 			
 			map.addLayer({
