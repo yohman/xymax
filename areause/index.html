@@ -76,6 +76,16 @@
 		zoom: 10
 	});
 
+	// Create a popup, but don't add it to the map yet.
+	let usePercentile = false;  
+	let selected_variable = 'Ω';
+	let popup = new mapboxgl.Popup({
+		closeButton: false,
+		closeOnClick: false
+	});
+
+	let percentileBreaks = [-75, -50, -25, 0, 25, 50, 75];
+	let totalBreaks = [-50000, -25000, -10000, 0, 10000, 25000, 50000];
 	
 	map.on('load', function () {
 
@@ -84,16 +94,6 @@
 		// ---------------------------------------------- //
 
 		
-		// Create a popup, but don't add it to the map yet.
-		let usePercentile = false;  
-		let selected_variable = 'Ω';
-		let popup = new mapboxgl.Popup({
-			closeButton: false,
-			closeOnClick: false
-		});
-
-		let percentileBreaks = [-75, -50, -25, 0, 25, 50, 75];
-		let totalBreaks = [-50000, -25000, -10000, 0, 10000, 25000, 50000];
 		
 		if (usePercentile == true) {
 			breaks = percentileBreaks;
@@ -156,7 +156,9 @@
 		// function to create variable buttons			  //
 		// ---------------------------------------------- //
 
-		function createVariableButtons(usePercentile = true, selected_variable = 'diff_total_use_area_percentile') {
+		function createVariableButtons(usePercentile = false, selected_variable = 'diff_total_use_area_percentile') {
+			console.log('Creating variable buttons');
+			console.log('Use percentile:', usePercentile);
 			// if toggle is percentile, show percentile variables, else show raw data variables
 			if (usePercentile == true) {
 				variables = [
@@ -195,6 +197,7 @@
 			document.getElementById('button-container').innerHTML = '';
 	
 			variables.forEach(variable => {
+				console.log('Creating button for:', variable);
 				const button = document.createElement('button');
 				// assign button-style class to the button
 				button.classList.add('button-style');
