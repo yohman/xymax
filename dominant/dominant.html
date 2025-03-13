@@ -1,1 +1,154 @@
-test...
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Dominant Use Map</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        #legend {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 3px;
+        }
+        .legend-key {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="legend"></div>
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoieW9obWFuIiwiYSI6IkxuRThfNFkifQ.u2xRJMiChx914U7mOZMiZw';
+        
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/light-v11',
+            center: [139.7671, 35.6812], // Tokyo coordinates
+            zoom: 11,
+            pitch: 45, // Add initial tilt
+            bearing: -17.6 // Optional: slight rotation for better 3D view
+        });
+
+        // Enable 3D terrain
+        map.on('style.load', () => {
+            map.addSource('mapbox-dem', {
+                'type': 'raster-dem',
+                'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+                'tileSize': 512,
+                'maxzoom': 14
+            });
+            map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.5 });
+        });
+
+        // Create a popup but don't add it to the map yet
+        const popup = new mapboxgl.Popup({
+            closeButton: false,
+            closeOnClick: false
+        });
+
+        // Function to generate distinct colors
+        function generateColors(n) {
+            const colors = [];
+            for (let i = 0; i < n; i++) {
+                const hue = (i * 360 / n) % 360;
+                colors.push(`hsl(${hue}, 70%, 50%)`);
+            }
+            return colors;
+        }
+
+        fetch('data/dominant.geojson')
+            .then(response => response.json())
+            .then(data => {
+                // Get unique values from Dominant_Use_2023
+                const uniqueValues = [...new Set(
+                    data.features.map(f => f.properties.Dominant_Use_2023)
+                )].filter(Boolean); // Remove null/undefined values
+
+                // Generate colors for unique values
+                const colorArray = generateColors(uniqueValues.length);
+                const colors = Object.fromEntries(
+                    uniqueValues.map((value, i) => [value, colorArray[i]])
+                );
+
+                map.on('load', () => {
+                    map.addSource('dominant-use', {
+                        type: 'geojson',
+                        data: data
+                    });
+
+                    map.addLayer({
+                        'id': 'dominant-use-layer',
+                        'type': 'fill-extrusion', // Change to 3D extrusion
+                        'source': 'dominant-use',
+                        'paint': {
+                            'fill-extrusion-color': [
+                                'match',
+                                ['get', 'Dominant_Use_2023'],
+                                ...uniqueValues.flatMap(value => [value, colors[value]]),
+                                '#808080'
+                            ],
+                            'fill-extrusion-height': [
+                                '*',
+                                ['get', 'Dominant_Use_Percentage_2023'],
+                                20 // Multiplier to make the height more visible
+                            ],
+                            'fill-extrusion-base': 0,
+                            'fill-extrusion-opacity': 0.8,
+                            // Add light effect
+                            'fill-extrusion-vertical-gradient': true
+                        }
+                    });
+
+                    // Remove hover outline effect since it's not compatible with fill-extrusion
+                    // Update mouse events to work with 3D features
+                    map.on('mousemove', 'dominant-use-layer', (e) => {
+                        if (e.features.length > 0) {
+                            const props = e.features[0].properties;
+                            const years = ['2023', '1996'].map(year => {
+                                const use = props[`Dominant_Use_${year}`];
+                                const percent = props[`Dominant_Use_Percentage_${year}`];
+                                return `${year}: ${use} (${percent}%)`;
+                            }).join('<br>');
+
+                            popup
+                                .setLngLat(e.lngLat)
+                                .setHTML(`<strong>Dominant Use by Year:</strong><br>${years}`)
+                                .addTo(map);
+                        }
+                    });
+
+                    map.on('mouseleave', 'dominant-use-layer', () => {
+                        popup.remove();
+                    });
+
+                    // Create legend
+                    const legend = document.getElementById('legend');
+                    Object.entries(colors).forEach(([category, color]) => {
+                        const item = document.createElement('div');
+                        const key = document.createElement('span');
+                        key.className = 'legend-key';
+                        key.style.backgroundColor = color;
+
+                        const value = document.createElement('span');
+                        value.innerHTML = category;
+
+                        item.appendChild(key);
+                        item.appendChild(value);
+                        legend.appendChild(item);
+                    });
+                });
+            });
+    </script>
+</body>
+</html>

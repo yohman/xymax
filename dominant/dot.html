@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Building Distribution Map</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        #legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 3px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .legend-item {
+            margin: 5px 0;
+            cursor: pointer;
+            padding: 3px;
+            border-radius: 3px;
+        }
+        .legend-item:hover {
+            background: rgba(0,0,0,0.1);
+        }
+        .legend-item.active {
+            background: rgba(0,0,0,0.2);
+        }
+        .legend-color {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 5px;
+            border-radius: 50%;
+        }
+        .legend-color.dimmed {
+            opacity: 0.3;
+        }
+        #timeline {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 40px;
+        }
+        .timeline-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.3);
+            z-index: 0;
+        }
+        .year-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        .year-circle:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .year-circle.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: white;
+        }
+        #ratio-control {
+            position: absolute;
+            top: 20px;
+            width: 160px;
+            right: 20px;
+            background: white;
+            opacity: 0.5;
+            padding: 10px;
+            border-radius: 3px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            transition: opacity 0.3s ease;
+        }
+        #ratio-control:hover {
+            opacity: 1;
+        }
+        .ratio-button {
+            margin: 2px;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background: white;
+            cursor: pointer;
+        }
+        .ratio-button.active {
+            background: #4264fb;
+            color: white;
+            border-color: #4264fb;
+        }
+        #size-control {
+            position: absolute;
+            top: 120px;
+            right: 20px;
+            width: 160px;
+            background: white;
+            padding: 10px;
+            border-radius: 3px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+        #size-control:hover {
+            opacity: 1;
+        }
+        .size-slider {
+            width: 150px;
+            margin: 10px 0;
+        }
+        .size-value {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        #popup {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            display: none;
+            z-index: 1000;
+        }
+        .popup-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+            align-items: center;
+            gap: 10px;
+        }
+        .popup-type {
+            display: flex;
+            align-items: center;
+            min-width: 100px;
+        }
+        .sparkline {
+            width: 60px;
+            height: 20px;
+            display: block;
+        }
+        .popup-percentage {
+            min-width: 50px;
+            text-align: right;
+        }
+        .popup-color {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-right: 5px;
+            border-radius: 50%;
+        }
+        #info-panel {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            width: 280px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        .info-header {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+        }
+        .info-section {
+            margin-bottom: 15px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 5px 0;
+            gap: 10px;
+        }
+        .info-type {
+            display: flex;
+            align-items: center;
+            min-width: 100px;
+        }
+        .info-numbers {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .info-count {
+            min-width: 60px;
+            text-align: right;
+        }
+        .info-percent {
+            min-width: 45px;
+            text-align: right;
+            color: rgba(255,255,255,0.7);
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="info-panel">
+        <div class="info-header">Visible Area Statistics</div>
+        <div id="info-content"></div>
+    </div>
+    <div id="timeline">
+        <div class="timeline-line"></div>
+        <div class="year-circle" data-year="1996">1996</div>
+        <div class="year-circle" data-year="2001">2001</div>
+        <div class="year-circle" data-year="2006">2006</div>
+        <div class="year-circle" data-year="2011">2011</div>
+        <div class="year-circle" data-year="2016">2016</div>
+        <div class="year-circle active" data-year="2023">2023</div>
+    </div>
+    <div id="legend">
+        <h4 style="margin: 0 0 10px 0">Building Types (Click to Filter)</h4>
+        <div class="legend-item" data-type="office"><span class="legend-color" style="background: #e41a1c"></span>Office</div>
+        <div class="legend-item" data-type="commercial"><span class="legend-color" style="background: #377eb8"></span>Commercial</div>
+        <div class="legend-item" data-type="hotel"><span class="legend-color" style="background: #4daf4a"></span>Hotel</div>
+        <div class="legend-item" data-type="house"><span class="legend-color" style="background: #984ea3"></span>House</div>
+        <div class="legend-item" data-type="apartment"><span class="legend-color" style="background: #ff7f00"></span>Apartment</div>
+        <div class="legend-item" data-type="logistics"><span class="legend-color" style="background: #ffff33"></span>Logistics</div>
+    </div>
+    <div id="ratio-control">
+        <h4 style="margin: 0 0 10px 0">Dot Ratio</h4>
+        <button class="ratio-button active" data-ratio="10">1:10</button>
+        <button class="ratio-button" data-ratio="100">1:100</button>
+    </div>
+    <div id="size-control">
+        <h4 style="margin: 0 0 10px 0">Dot Size</h4>
+        <input type="range" min="1" max="5" value="1.5" step="0.5" class="size-slider" id="dot-size-slider">
+        <div class="size-value"><span id="size-value-display">1.5</span> pixels</div>
+    </div>
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoieW9obWFuIiwiYSI6IkxuRThfNFkifQ.u2xRJMiChx914U7mOZMiZw';
+        
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/dark-v11',
+            center: [139.7670, 35.6814],
+            zoom: 10
+        });
+
+        function generatePointsInPolygon(polygon, count) {
+
+            const points = [];
+            const bbox = turf.bbox(polygon);
+            const cellSize = Math.sqrt(turf.area(polygon) / count); // Approximate cell size for grid
+
+            
+            const grid = turf.pointGrid(bbox, cellSize, { units: 'meters' });
+
+            while (points.length < count) {
+                const randomPoint = turf.randomPoint(1, { bbox: bbox }).features[0];
+                if (turf.booleanPointInPolygon(randomPoint, polygon)) {
+                    points.push(randomPoint.geometry.coordinates);
+                }
+            }
+            return points;
+        }
+
+        function getDominantBuildingType(properties) {
+            const types = {
+                'office': properties['2023_office_count'] || 0,
+                'commercial': properties['2023_commercial_count'] || 0,
+                'hotel': properties['2023_hotel_count'] || 0,
+                'house': properties['2023_house_count'] || 0,
+                'apartment': properties['2023_apartment_count'] || 0,
+                'logistics': properties['2023_logistics_count'] || 0
+            };
+            
+            const total = Object.values(types).reduce((a, b) => a + b, 0);
+            if (total === 0) return null;
+
+            // Return random type based on probability distribution
+            const rand = Math.random();
+            let cumulative = 0;
+            for (const [type, count] of Object.entries(types)) {
+                cumulative += count / total;
+                if (rand <= cumulative) return type;
+            }
+            return Object.keys(types)[0];
+        }
+
+        function getBuildingTypeColor(type) {
+            const colors = {
+                'office': '#e41a1c',
+                'commercial': '#377eb8',
+                'hotel': '#4daf4a',
+                'house': '#984ea3',
+                'apartment': '#ff7f00',
+                'logistics': '#ffff33'
+            };
+            return colors[type] || '#ccc';
+        }
+
+        let activeTypes = new Set();
+
+        function updateFilter() {
+            if (activeTypes.size === 0) {
+                map.setFilter('points-layer', null);
+                document.querySelectorAll('.legend-item .legend-color').forEach(el => {
+                    el.classList.remove('dimmed');
+                });
+            } else {
+                map.setFilter('points-layer', [
+                    'match',
+                    ['get', 'buildingType'],
+                    [...Array.from(activeTypes)],
+                    true,
+                    false
+                ]);
+                document.querySelectorAll('.legend-item').forEach(item => {
+                    const type = item.getAttribute('data-type');
+                    const color = item.querySelector('.legend-color');
+                    if (activeTypes.has(type)) {
+                        color.classList.remove('dimmed');
+                    } else {
+                        color.classList.add('dimmed');
+                    }
+                });
+            }
+        }
+
+        // Add click handlers for legend items
+        document.querySelectorAll('.legend-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const type = item.getAttribute('data-type');
+                if (activeTypes.has(type)) {
+                    activeTypes.delete(type);
+                    item.classList.remove('active');
+                } else {
+                    activeTypes.add(type);
+                    item.classList.add('active');
+                }
+                updateFilter();
+            });
+        });
+
+        let selectedYear = '2023';
+        let dotRatio = 10; // Default dot ratio
+        let dotSize = 1.5; // Default dot size
+
+        function updateDotRatio(ratio) {
+            dotRatio = ratio;
+            document.querySelectorAll('.ratio-button').forEach(button => {
+                button.classList.toggle('active', button.getAttribute('data-ratio') === ratio.toString());
+            });
+            updatePoints(selectedYear);
+        }
+
+        // Add click handlers for ratio buttons
+        document.querySelectorAll('.ratio-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const ratio = parseInt(button.getAttribute('data-ratio'));
+                updateDotRatio(ratio);
+            });
+        });
+
+        // Add dot size slider handler
+        document.getElementById('dot-size-slider').addEventListener('input', (e) => {
+            dotSize = parseFloat(e.target.value);
+            document.getElementById('size-value-display').textContent = dotSize;
+            if (map.getLayer('points-layer')) {
+                map.setPaintProperty('points-layer', 'circle-radius', dotSize);
+            }
+        });
+
+        function updatePoints(year) {
+            selectedYear = year;
+            
+            document.querySelectorAll('.year-circle').forEach(circle => {
+                circle.classList.toggle('active', circle.getAttribute('data-year') === year);
+            });
+
+            fetch('data/tokyo_mesh_2.geojson')
+                .then(response => response.json())
+                .then(data => {
+                    // Add unique IDs to features if they don't exist
+                    data.features.forEach((feature, index) => {
+                        feature.id = feature.properties.KEY_CODE || index;
+                    });
+
+                    // Update the source data with IDs
+                    if (map.getSource('mesh')) {
+                        map.getSource('mesh').setData(data);
+                    }
+
+                    const points = {
+                        type: 'FeatureCollection',
+                        features: []
+                    };
+
+                    data.features.forEach(feature => {
+                        const yearPrefix = year === '2023' ? '2023' : `${year}`;
+                        const buildingCount = feature.properties[`${yearPrefix}_building_count`] || 0;
+                        const pointCount = Math.floor(buildingCount / dotRatio); // Use dotRatio here
+
+                        if (pointCount > 0) {
+                            const generatedPoints = generatePointsInPolygon(feature, pointCount);
+                            generatedPoints.forEach(point => {
+                                const buildingType = getDominantBuildingTypeForYear(feature.properties, year);
+                                points.features.push({
+                                    type: 'Feature',
+                                    geometry: {
+                                        type: 'Point',
+                                        coordinates: point
+                                    },
+                                    properties: {
+                                        buildingType: buildingType
+                                    }
+                                });
+                            });
+                        }
+                    });
+
+                    if (map.getSource('points')) {
+                        map.getSource('points').setData(points);
+                        updateInfoPanel(); // Add this line
+                    }
+                });
+        }
+
+        function getDominantBuildingTypeForYear(properties, year) {
+            const yearPrefix = year === '2023' ? '2023' : `${year}`;
+            const types = {
+                'office': properties[`${yearPrefix}_office_count`] || 0,
+                'commercial': properties[`${yearPrefix}_commercial_count`] || 0,
+                'hotel': properties[`${yearPrefix}_hotel_count`] || 0,
+                'house': properties[`${yearPrefix}_house_count`] || 0,
+                'apartment': properties[`${yearPrefix}_apartment_count`] || 0,
+                'logistics': properties[`${yearPrefix}_logistics_count`] || 0
+            };
+            
+            const total = Object.values(types).reduce((a, b) => a + b, 0);
+            if (total === 0) return null;
+
+            const rand = Math.random();
+            let cumulative = 0;
+            for (const [type, count] of Object.entries(types)) {
+                cumulative += count / total;
+                if (rand <= cumulative) return type;
+            }
+            return Object.keys(types)[0];
+        }
+
+        function calculatePercentages(properties, year) {
+            const prefix = year === '2023' ? '2023' : `${year}`;
+            const types = {
+                'office': properties[`${prefix}_office_count`] || 0,
+                'commercial': properties[`${prefix}_commercial_count`] || 0,
+                'hotel': properties[`${prefix}_hotel_count`] || 0,
+                'house': properties[`${prefix}_house_count`] || 0,
+                'apartment': properties[`${prefix}_apartment_count`] || 0,
+                'logistics': properties[`${prefix}_logistics_count`] || 0
+            };
+            
+            const total = Object.values(types).reduce((a, b) => a + b, 0);
+            if (total === 0) return null;
+
+            return Object.entries(types).map(([type, count]) => ({
+                type,
+                percentage: ((count / total) * 100).toFixed(1)
+            })).filter(item => item.percentage > 0);
+        }
+
+        function getTypeHistory(properties, type) {
+            const years = ['1996', '2001', '2006', '2011', '2016', '2023'];
+            return years.map(year => {
+                const count = properties[`${year}_${type}_count`] || 0;
+                return count;
+            });
+        }
+
+        function drawSparkline(canvas, data) {
+            // Create high-resolution canvas
+            const scale = window.devicePixelRatio || 1;
+            const displayWidth = 60;
+            const displayHeight = 20;
+            
+            canvas.width = displayWidth * scale;
+            canvas.height = displayHeight * scale;
+            canvas.style.width = `${displayWidth}px`;
+            canvas.style.height = `${displayHeight}px`;
+
+            const ctx = canvas.getContext('2d');
+            ctx.scale(scale, scale);
+
+            // Clear canvas
+            ctx.clearRect(0, 0, displayWidth, displayHeight);
+
+            // Get min and max for scaling
+            const max = Math.max(...data);
+            const min = Math.min(...data);
+            const range = max - min || 1;
+
+            // Add padding
+            const padding = 2;
+            const graphWidth = displayWidth - (padding * 2);
+            const graphHeight = displayHeight - (padding * 2);
+
+            // Draw line with anti-aliasing
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            data.forEach((value, i) => {
+                const x = padding + (i / (data.length - 1)) * graphWidth;
+                const y = padding + graphHeight - ((value - min) / range * graphHeight);
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+
+            ctx.stroke();
+
+            // Draw endpoints
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            
+            // Start point (1996)
+            const startX = padding;
+            const startY = padding + graphHeight - ((data[0] - min) / range * graphHeight);
+            ctx.beginPath();
+            ctx.arc(startX, startY, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // End point (2023)
+            const endX = displayWidth - padding;
+            const endY = padding + graphHeight - ((data[data.length - 1] - min) / range * graphHeight);
+            ctx.beginPath();
+            ctx.arc(endX, endY, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function getVisibleStats() {
+            // Get all features and deduplicate by KEY_CODE
+            const features = map.querySourceFeatures('mesh');
+            const uniqueFeatures = Object.values(
+                features.reduce((acc, feature) => {
+                    const keyCode = feature.properties.KEY_CODE;
+                    if (!acc[keyCode]) {
+                        acc[keyCode] = feature;
+                    }
+                    return acc;
+                }, {})
+            );
+            
+            const visibleFeatures = uniqueFeatures.filter(feature => 
+                map.getFeatureState({ source: 'mesh', id: feature.id }).visible
+            );
+            
+            return calculateAreaStats(visibleFeatures);
+        }
+
+        function calculateAreaStats(features) {
+            const years = ['1996', '2001', '2006', '2011', '2016', '2023'];
+            const stats = {
+                buildingCount: 0,
+                typeStats: {
+                    office: { count: 0, history: years.map(() => 0) },
+                    commercial: { count: 0, history: years.map(() => 0) },
+                    hotel: { count: 0, history: years.map(() => 0) },
+                    house: { count: 0, history: years.map(() => 0) },
+                    apartment: { count: 0, history: years.map(() => 0) },
+                    logistics: { count: 0, history: years.map(() => 0) }
+                }
+            };
+
+            features.forEach(feature => {
+                const props = feature.properties;
+                const yearPrefix = selectedYear === '2023' ? '2023' : selectedYear;
+                
+                // Current year counts
+                stats.buildingCount += props[`${yearPrefix}_building_count`] || 0;
+                Object.keys(stats.typeStats).forEach(type => {
+                    stats.typeStats[type].count += props[`${yearPrefix}_${type}_count`] || 0;
+                });
+
+                // Historical data
+                years.forEach((year, i) => {
+                    Object.keys(stats.typeStats).forEach(type => {
+                        stats.typeStats[type].history[i] += props[`${year}_${type}_count`] || 0;
+                    });
+                });
+            });
+
+            // Calculate percentages
+            const total = Object.values(stats.typeStats).reduce((sum, type) => sum + type.count, 0);
+            Object.values(stats.typeStats).forEach(type => {
+                type.percentage = total > 0 ? (type.count / total * 100).toFixed(1) : 0;
+            });
+
+            return stats;
+        }
+
+        function updateInfoPanel() {
+            const stats = getVisibleStats();
+            const content = document.getElementById('info-content');
+            
+            let html = `
+                <div class="info-section">
+                    <div>Total Buildings: ${stats.buildingCount.toLocaleString()}</div>
+                </div>
+                <div class="info-section">
+            `;
+
+            Object.entries(stats.typeStats)
+                .sort((a, b) => b[1].count - a[1].count)
+                .forEach(([type, data]) => {
+                    if (data.count > 0) {
+                        html += `
+                            <div class="info-row">
+                                <div class="info-type">
+                                    <span class="popup-color" style="background: ${getBuildingTypeColor(type)}"></span>
+                                    ${type.charAt(0).toUpperCase() + type.slice(1)}
+                                </div>
+                                <div class="info-numbers">
+                                    <canvas class="sparkline" data-type="${type}" width="60" height="20"></canvas>
+                                    <span class="info-count">${data.count.toLocaleString()}</span>
+                                    <span class="info-percent">${data.percentage}%</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+
+            html += '</div>';
+            content.innerHTML = html;
+
+            // Draw sparklines
+            Object.entries(stats.typeStats).forEach(([type, data]) => {
+                if (data.count > 0) {
+                    const canvas = content.querySelector(`canvas[data-type="${type}"]`);
+                    if (canvas) {
+                        drawSparkline(canvas, data.history);
+                    }
+                }
+            });
+        }
+
+        // Add click handlers for timeline
+        document.querySelectorAll('.year-circle').forEach(circle => {
+            circle.addEventListener('click', () => {
+                const year = circle.getAttribute('data-year');
+                updatePoints(year);
+            });
+        });
+
+        map.on('load', () => {
+            // Add polygon layer
+            map.addSource('mesh', {
+                type: 'geojson',
+                data: 'data/tokyo_mesh_2.geojson'
+            });
+
+            // Add highlight outline layer first
+            map.addLayer({
+                id: 'mesh-highlight',
+                type: 'line',
+                source: 'mesh',
+                paint: {
+                    'line-color': '#ffff00',
+                    'line-width': 2,
+                    'line-opacity': ['case',
+                        ['boolean', ['feature-state', 'visible'], false],
+                        1,
+                        0
+                    ]
+                }
+            });
+
+            map.addLayer({
+                id: 'mesh-layer',
+                type: 'fill',
+                source: 'mesh',
+                paint: {
+                    'fill-color': '#088',
+                    'fill-opacity': 0.5,
+                    'fill-outline-color': '#000'
+                }
+            });
+
+            // Add empty points source and layer first
+            map.addSource('points', {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: []
+                }
+            });
+
+            map.addLayer({
+                id: 'points-layer',
+                type: 'circle',
+                source: 'points',
+                paint: {
+                    'circle-radius': dotSize,
+                    'circle-color': [
+                        'match',
+                        ['get', 'buildingType'],
+                        'office', '#e41a1c',
+                        'commercial', '#377eb8',
+                        'hotel', '#4daf4a',
+                        'house', '#984ea3',
+                        'apartment', '#ff7f00',
+                        'logistics', '#ffff33',
+                        '#ccc'
+                    ]
+                }
+            });
+
+            // Then update points
+            updatePoints('2023');
+
+            // Keep the moveend event listener
+            map.on('moveend', () => {
+                const bounds = map.getBounds();
+                const features = map.querySourceFeatures('mesh');
+                
+                features.forEach(feature => {
+                    const polygon = turf.polygon(feature.geometry.coordinates);
+                    const bbox = turf.bbox(polygon);
+                    
+                    // Check if polygon is fully contained in view
+                    const isVisible = 
+                        bbox[0] >= bounds.getWest() &&
+                        bbox[2] <= bounds.getEast() &&
+                        bbox[1] >= bounds.getSouth() &&
+                        bbox[3] <= bounds.getNorth();
+                    
+                    map.setFeatureState(
+                        { source: 'mesh', id: feature.id },
+                        { visible: isVisible }
+                    );
+                });
+
+                updateInfoPanel();
+            });
+        });
+    </script>
+</body>
+</html>
